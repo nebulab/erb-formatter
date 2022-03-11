@@ -1,0 +1,23 @@
+PATH
+  remote: .
+  specs:
+    erb-formatter (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    minitest (5.15.0)
+    rake (13.0.6)
+    rufo (0.13.0)
+
+PLATFORMS
+  arm64-darwin-21
+
+DEPENDENCIES
+  erb-formatter!
+  minitest (~> 5.0)
+  rake (~> 13.0)
+  rufo
+
+BUNDLED WITH
+   2.3.7

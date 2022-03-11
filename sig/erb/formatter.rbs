@@ -1,0 +1,7 @@
+# See the writing guide of rbs: https://github.com/ruby/rbs#guides
+class ERB::Formatter
+  VERSION: String
+
+  def initialize: (String, line_width: ?Integer, filename: ?String) -> void
+  def self.format(String, filename: ?String) -> String
+end
