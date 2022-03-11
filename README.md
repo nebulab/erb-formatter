@@ -1,8 +1,24 @@
-# ERB::Formatter
+# ERB::Formatter 🪜
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/erb/formatter`. To experiment with that code, run `bin/console` for an interactive prompt.
+Format ERB files with speed and precision.
 
-TODO: Delete this and the text above, and describe your gem
+Features:
+
+- very fast
+- attempts to limit length (configurable)
+- tries to have an ouput similar to prettier for HTML
+- indents correctly ruby blocks (e.g. `if`/`elsif`/`do`/`end`)
+- designed to be integrated into editors and commit hooks
+- gives meaningful output in case of errors (most of the time)
+- will use multiline values for `class` and `data-action` attributes
+
+Roadmap:
+
+- extensive unit testing
+- more configuration options
+- more ruby reformatting capabilities
+- JavaScript and CSS formatting
+- VSCode plugin
 
 ## Installation
 
@@ -23,7 +39,71 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+### From the command line
+
+    $ echo "<div       > asdf  <% if 123%> <%='foobar'%> <%end-%>  </div>" | erb-format --stdin
+    <div>
+      asdf
+      <% if 123 %>
+        <%= 'foobar' %>
+      <% end -%>
+    </div>
+
+
+Check out `erb-format --help` for more options.
+
+### From Ruby
+
+```ruby
+require 'erb/formatter'
+
+formatted = ERB::Formatter.format <<-ERB
+<div        >
+            asdf
+                  <% if 123%>
+                      <%='foobar'%> <%end-%>
+           </div>
+ERB
+
+# => "<div>\n  asdf\n  <% if 123 %>\n    <%= 'foobar' %>\n  <% end -%>\n</div>\n"
+#
+# Same as:
+#
+#   <div>
+#     asdf
+#     <% if 123 %>
+#       <%= 'foobar' %>
+#     <% end -%>
+#   </div>
+```
+
+### With `lint-staged`
+
+Add the gem to your gemfile and the following to your `package.json`:
+
+```js
+"lint-staged": {
+  // …
+  "*.html.erb": "bundle exec erb-format --write"
+}
+```
+
+### As a TextMate plugin
+
+Create a command with the following settings:
+
+- **Scope selector:** `text.html.erb`
+- **Semantic class:** `callback.document.will-save`
+- **Input:** `document` → `text`
+- **Output:** `replace document` → `text`
+- **Caret placement:** `line-interpolation`
+
+```bash
+#!/usr/bin/env bash
+
+cd "$TM_PROJECT_DIRECTORY"
+bundle exec erb-format --stdin-filename "$TM_FILEPATH" < /dev/stdin 2> /dev/stdout
+```
 
 ## Development
 
