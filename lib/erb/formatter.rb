@@ -10,7 +10,7 @@ require 'pp'
 require 'stringio'
 
 class ERB::Formatter
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
   autoload :IgnoreList, 'erb/formatter/ignore_list'
 
   class Error < StandardError; end
