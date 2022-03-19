@@ -275,7 +275,7 @@ class ERB::Formatter
 
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
-    code = lines.map { indented(_1) }.join.strip
+    code = lines.map { |l| indented(l) }.join.strip
     p RUBY_OUT: code if @debug
     code
   end

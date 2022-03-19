@@ -7,8 +7,8 @@ class ERB::Formatter::IgnoreList
 
   def should_ignore_file?(path)
     path = File.expand_path(path, @base_dir)
-    @ignore_list.any? do
-      File.fnmatch? File.expand_path(_1.chomp, @base_dir), path
+    @ignore_list.any? do |line|
+      File.fnmatch? File.expand_path(line.chomp, @base_dir), path
     end
   end
 end

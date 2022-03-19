@@ -40,9 +40,9 @@ abort "Can't read both stdin and a list of files" if read_stdin && !ARGV.empty?
 # If multiple files are provided assume `--write` and
 # execute on each of them.
 if ARGV.size > 1
-  ARGV.each do
-    warn "==> Formatting #{_1}..."
-    system __FILE__, _1, *[
+  ARGV.each do |arg|
+    warn "==> Formatting #{arg}..."
+    system __FILE__, arg, *[
       ('--write' if write)
     ].compact or exit(1)
   end
