@@ -210,11 +210,20 @@ class ERB::Formatter
 
     text = text.gsub(/\s+/m, ' ').strip
 
-    offset = (starting_space ? indented("") : "").size
+    offset = indented("").size
+    # Restore full line width if there are less than 40 columns available
+    offset = 0 if (line_width - offset) <= 40
+    available_width = line_width - offset
+
     lines = []
 
     until text.empty?
-      lines << text.slice!(0..text.rindex(' ', -(line_width - offset)))
+      if text.size >= available_width
+        last_space_index = text[0..available_width].rindex(' ')
+        lines << text.slice!(0..last_space_index)
+      else
+        lines << text.slice!(0..-1)
+      end
       offset = 0
     end
 
