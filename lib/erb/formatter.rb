@@ -291,7 +291,7 @@ class ERB::Formatter
     erb_pre_pos = 0
     until erb_scanner.eos?
       if erb_scanner.scan_until(erb_tags_regexp)
-        p PRE_MATCH: [erb_pre_pos, '..', erb_scanner.pre_match]
+        p PRE_MATCH: [erb_pre_pos, '..', erb_scanner.pre_match] if @debug
         erb_pre_match = erb_scanner.pre_match
         erb_pre_match = erb_pre_match[erb_pre_pos..]
         erb_pre_pos = erb_scanner.pos
