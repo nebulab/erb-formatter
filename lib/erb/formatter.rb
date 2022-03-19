@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 
-# $DEBUG = true
+# @debug = true
 require "erb"
 require "cgi"
 require "ripper"
@@ -62,14 +62,15 @@ class ERB::Formatter
     new(source, filename: filename).html
   end
 
-  def initialize(source, line_width: 80, filename: nil)
+  def initialize(source, line_width: 80, filename: nil, debug: $DEBUG)
     @original_source = source
     @filename = filename || '(erb)'
     @line_width = line_width
     @source = source.dup
     @html = +""
+    @debug = debug
 
-    html.extend DebugShovel if $DEBUG
+    html.extend DebugShovel if @debug
 
     @tag_stack = []
     @pre_pos = 0
@@ -168,13 +169,13 @@ class ERB::Formatter
 
   def tag_stack_push(tag_name, code)
     tag_stack << [tag_name, code]
-    p PUSH: tag_stack if $DEBUG
+    p PUSH: tag_stack if @debug
   end
 
   def tag_stack_pop(tag_name, code)
     if tag_name == tag_stack.last&.first
       tag_stack.pop
-      p POP_: tag_stack if $DEBUG
+      p POP_: tag_stack if @debug
     else
       raise "Unmatched close tag, tried with #{[tag_name, code]}, but #{tag_stack.last} was on the stack"
     end
@@ -201,6 +202,7 @@ class ERB::Formatter
   end
 
   def format_text(text)
+    p format_text: text if @debug
     starting_space = text.match?(/\A\s/)
 
     final_newlines_count = text.match(/(\s*)\z/m).captures.last.count("\n")
@@ -226,7 +228,7 @@ class ERB::Formatter
       end
       offset = 0
     end
-
+    p lines: lines if @debug
     html << lines.shift.strip unless starting_space
     lines.each do |line|
       html << indented(line)
@@ -262,7 +264,7 @@ class ERB::Formatter
       code += "\nend" unless ERB_OPEN_BLOCK["#{code}\nend"]
       code += "\n}" unless ERB_OPEN_BLOCK["#{code}\n}"]
     end
-    p RUBY_IN_: code if $DEBUG
+    p RUBY_IN_: code if @debug
 
     offset = tag_stack.size * 2
     if defined? Rubocop
@@ -274,11 +276,12 @@ class ERB::Formatter
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
     code = lines.map { indented(_1) }.join.strip
-    p RUBY_OUT: code if $DEBUG
+    p RUBY_OUT: code if @debug
     code
   end
 
   def format_erb_tags(string)
+    p format_erb_tags: string if @debug
     if %w[style script].include?(tag_stack.last&.first)
       html << string.rstrip
       return
@@ -288,6 +291,7 @@ class ERB::Formatter
     erb_pre_pos = 0
     until erb_scanner.eos?
       if erb_scanner.scan_until(erb_tags_regexp)
+        p PRE_MATCH: [erb_pre_pos, '..', erb_scanner.pre_match]
         erb_pre_match = erb_scanner.pre_match
         erb_pre_match = erb_pre_match[erb_pre_pos..]
         erb_pre_pos = erb_scanner.pos
@@ -317,6 +321,7 @@ class ERB::Formatter
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
         end
       else
+        p ERB_REST: erb_scanner.rest if @debug
         rest = erb_scanner.rest.to_s
         format_text(rest)
         erb_scanner.terminate
@@ -329,7 +334,10 @@ class ERB::Formatter
 
     until scanner.eos?
       if matched = scanner.scan_until(tags_regexp)
+        p format_pre_match: [pre_pos, '..', scanner.pre_match[pre_pos..]]  if @debug
         pre_match = scanner.pre_match[pre_pos..]
+        p POS: pre_pos...scanner.pos, advanced: source[pre_pos...scanner.pos] if @debug
+        p MATCHED: matched if @debug
         self.pre_pos = scanner.charpos
 
         # Don't accept `name= "value"` attributes
@@ -360,6 +368,7 @@ class ERB::Formatter
           raise "Unrecognized content: #{matched.inspect}"
         end
       else
+        p format_rest: scanner.rest if @debug
         format_erb_tags(scanner.rest.to_s)
         scanner.terminate
       end

@@ -25,6 +25,10 @@ OptionParser.new do |parser|
     filename ||= '-'
   end
 
+  parser.on("--[no-]debug", "Enable debug mode") do |value|
+    $DEBUG = value
+  end
+
   parser.on("-h", "--help", "Prints this help") do
     puts parser
     exit
