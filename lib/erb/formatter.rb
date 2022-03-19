@@ -328,10 +328,9 @@ class ERB::Formatter
     scanner = StringScanner.new(source)
 
     until scanner.eos?
-
       if matched = scanner.scan_until(tags_regexp)
         pre_match = scanner.pre_match[pre_pos..]
-        self.pre_pos = scanner.pos
+        self.pre_pos = scanner.charpos
 
         # Don't accept `name= "value"` attributes
         raise "Bad attribute, please fix spaces after the equal sign." if BAD_ATTR.match? pre_match
