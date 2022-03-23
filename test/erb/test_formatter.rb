@@ -116,4 +116,11 @@ class ERB::TestFormatter < Minitest::Test
       "Expected to have the same content"
     )
   end
+
+  def test_tagnames_with_dashes
+    assert_equal(
+      "<custom-div>\n  asdf\n</custom-div>\n",
+      ERB::Formatter.format("<custom-div        > asdf    </custom-div>"),
+    )
+  end
 end

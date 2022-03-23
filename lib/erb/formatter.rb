@@ -31,9 +31,11 @@ class ERB::Formatter
   ERB_END = %r{(<%-?)\s*(end)\s*(-?%>)}
   ERB_ELSE = %r{(<%-?)\s*(else|elsif\b.*)\s*(-?%>)}
 
+  TAG_NAME = /[a-z0-9_:-]+/
+  TAG_NAME_ONLY = /\A#{TAG_NAME}\z/
   HTML_ATTR = %r{\s+#{SINGLE_QUOTE_ATTR}|\s+#{DOUBLE_QUOTE_ATTR}|\s+#{UNQUOTED_ATTR}|\s+#{ATTR_NAME}}m
-  HTML_TAG_OPEN = %r{<(\w+)((?:#{HTML_ATTR})*)(\s*?)(/>|>)}m
-  HTML_TAG_CLOSE = %r{</\s*(\w+)\s*>}
+  HTML_TAG_OPEN = %r{<(#{TAG_NAME})((?:#{HTML_ATTR})*)(\s*?)(/>|>)}m
+  HTML_TAG_CLOSE = %r{</\s*(#{TAG_NAME})\s*>}
 
   SELF_CLOSING_TAG = /\A(area|base|br|col|command|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)\z/i
 
@@ -355,7 +357,7 @@ class ERB::Formatter
         elsif matched.match(HTML_TAG_OPEN)
           _, tag_name, tag_attrs, _, tag_closing = *scanner.captures
 
-          raise "Unknown tag #{tag_name.inspect}" unless tag_name.match?(/\A[a-z0-9]+\z/)
+          raise "Unknown tag #{tag_name.inspect}" unless tag_name.match?(TAG_NAME_ONLY)
 
           tag_self_closing = tag_closing == '/>' || SELF_CLOSING_TAG.match?(tag_name)
           tag_attrs.strip!
