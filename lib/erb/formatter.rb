@@ -1,12 +1,9 @@
 # frozen_string_literal: false
 
-# @debug = true
 require "erb"
-require "cgi"
 require "ripper"
 require 'securerandom'
 require 'strscan'
-require 'pp'
 require 'stringio'
 
 class ERB::Formatter
