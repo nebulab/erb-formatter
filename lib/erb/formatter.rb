@@ -342,7 +342,7 @@ class ERB::Formatter
         self.pre_pos = scanner.charpos
 
         # Don't accept `name= "value"` attributes
-        raise "Bad attribute, please fix spaces after the equal sign." if BAD_ATTR.match? pre_match
+        raise "Bad attribute, please fix spaces after the equal sign:\n#{pre_match}" if BAD_ATTR.match? pre_match
 
         format_erb_tags(pre_match) if pre_match
 
