@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'erb/formatter/command_line'
+
+ERB::Formatter::CommandLine.new(ARGV).run
