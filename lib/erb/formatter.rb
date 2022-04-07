@@ -8,7 +8,7 @@ require 'strscan'
 require 'stringio'
 
 class ERB::Formatter
-  VERSION = "0.2.2"
+  VERSION = "0.3.0"
 
   autoload :IgnoreList, 'erb/formatter/ignore_list'
 
