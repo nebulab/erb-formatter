@@ -6,7 +6,7 @@ Features:
 
 - very fast
 - attempts to limit length (configurable)
-- tries to have an ouput similar to prettier for HTML
+- tries to have an output similar to prettier for HTML
 - indents correctly ruby blocks (e.g. `if`/`elsif`/`do`/`end`)
 - designed to be integrated into editors and commit hooks
 - gives meaningful output in case of errors (most of the time)
