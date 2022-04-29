@@ -7,8 +7,20 @@ require 'securerandom'
 require 'strscan'
 require 'stringio'
 
+require 'syntax_tree'
+
 class ERB::Formatter
   VERSION = "0.3.0"
+
+  module SyntaxTreeCommandPatch
+    def format(q)
+      q.group do
+        q.format(message)
+        q.text(" ")
+        q.format(arguments) # WAS: q.nest(message.value.length + 1) { q.format(arguments) }
+      end
+    end
+  end
 
   autoload :IgnoreList, 'erb/formatter/ignore_list'
 
@@ -268,16 +280,13 @@ class ERB::Formatter
     end
     p RUBY_IN_: code if @debug
 
-    offset = tag_stack.size * 2
-    if defined? Rubocop
-      code = format_code_with_rubocop(code, line_width - offset) if (offset + code.size) > line_width
-    elsif defined?(Rufo)
-      code = Rufo.format(code) rescue code
-    end
+    SyntaxTree::Command.prepend SyntaxTreeCommandPatch
+
+    code = SyntaxTree.format(code)
 
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
-    code = lines.map { |l| indented(l) }.join.strip
+    code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join.strip
     p RUBY_OUT: code if @debug
     code
   end
@@ -304,22 +313,25 @@ class ERB::Formatter
 
         erb_open, ruby_code, erb_close = ERB_TAG.match(erb_code).captures
         erb_open << ' ' unless ruby_code.start_with?('#')
-        full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
 
         case ruby_code
         when /\Aend\z/
+          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
         when /\A(else|elsif\b(.*))\z/
+          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         when ERB_OPEN_BLOCK
           ruby_code = format_ruby(ruby_code, autoclose: true)
+          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         else
           ruby_code = format_ruby(ruby_code, autoclose: false)
+          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
         end
       else
@@ -336,7 +348,7 @@ class ERB::Formatter
 
     until scanner.eos?
       if matched = scanner.scan_until(tags_regexp)
-        p format_pre_match: [pre_pos, '..', scanner.pre_match[pre_pos..]]  if @debug
+        p format_pre_match: [pre_pos, '..', scanner.pre_match[pre_pos..]] if @debug
         pre_match = scanner.pre_match[pre_pos..]
         p POS: pre_pos...scanner.pos, advanced: source[pre_pos...scanner.pos] if @debug
         p MATCHED: matched if @debug

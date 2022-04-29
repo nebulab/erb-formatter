@@ -27,7 +27,6 @@ Add this line to your application's Gemfile:
 
 ```ruby
 gem 'erb-formatter'
-gem 'rufo' # for enabling minimal ruby re-formatting
 ```
 
 And then execute:
