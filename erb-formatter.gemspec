@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "lib/erb/formatter"
+require_relative "lib/erb/formatter/version"
 
 Gem::Specification.new do |spec|
   spec.name = "erb-formatter"

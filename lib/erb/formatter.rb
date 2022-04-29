@@ -6,12 +6,11 @@ require "ripper"
 require 'securerandom'
 require 'strscan'
 require 'stringio'
+require 'erb/formatter/version'
 
 require 'syntax_tree'
 
 class ERB::Formatter
-  VERSION = "0.3.0"
-
   module SyntaxTreeCommandPatch
     def format(q)
       q.group do
