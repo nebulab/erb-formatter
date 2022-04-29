@@ -19,6 +19,7 @@ Roadmap:
 - more ruby reformatting capabilities
 - JavaScript and CSS formatting
 - VSCode plugin
+- fix spaces after attribute equal signs instead of complaining
 
 ## Installation
 
