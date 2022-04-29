@@ -91,7 +91,6 @@ class ERB::TestFormatter < Minitest::Test
       "Expected to have the same content"
     )
 
-    indent = "  " * 40
     assert_equal(
       "In the event we decide to issue a refund, we will reimburse you no later" \
       "\n      than fourteen (14) days from the date on which we make that" \
