@@ -197,9 +197,10 @@ class ERB::Formatter
     super error
   end
 
-  def indented(string)
+  def indented(string, strip: true)
+    string = string.strip if strip
     indent = "  " * tag_stack.size
-    "\n#{indent}#{string.strip}"
+    "\n#{indent}#{string}"
   end
 
   def format_text(text)
