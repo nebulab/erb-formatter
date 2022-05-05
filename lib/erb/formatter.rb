@@ -164,7 +164,6 @@ class ERB::Formatter
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         when ERB_OPEN_BLOCK
-          ruby_code = format_ruby(ruby_code, autoclose: true)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         else
@@ -281,7 +280,11 @@ class ERB::Formatter
 
     SyntaxTree::Command.prepend SyntaxTreeCommandPatch
 
-    code = SyntaxTree.format(code)
+    code = begin
+      SyntaxTree.format(code)
+    rescue SyntaxTree::Parser::ParseError
+      code
+    end
 
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
@@ -324,7 +327,6 @@ class ERB::Formatter
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         when ERB_OPEN_BLOCK
-          ruby_code = format_ruby(ruby_code, autoclose: true)
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
