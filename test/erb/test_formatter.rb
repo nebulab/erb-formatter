@@ -16,7 +16,7 @@ class ERB::TestFormatter < Minitest::Test
       expected_path = erb_path.chomp('.erb') + '.expected.erb'
 
       # File.write expected_path, ERB::Formatter.format(File.read(erb_path))
-      assert_equal(File.read(expected_path), ERB::Formatter.format(File.read(erb_path)))
+      assert_equal(File.read(expected_path), ERB::Formatter.format(File.read(erb_path)), "Formatting of #{erb_path} failed")
     end
   end
 
@@ -91,7 +91,6 @@ class ERB::TestFormatter < Minitest::Test
       "Expected to have the same content"
     )
 
-    indent = "  " * 40
     assert_equal(
       "In the event we decide to issue a refund, we will reimburse you no later" \
       "\n      than fourteen (14) days from the date on which we make that" \
@@ -121,6 +120,18 @@ class ERB::TestFormatter < Minitest::Test
     assert_equal(
       "<custom-div>\n  asdf\n</custom-div>\n",
       ERB::Formatter.format("<custom-div        > asdf    </custom-div>"),
+    )
+  end
+
+  def test_format_ruby
+    assert_equal(
+      "<div>\n" \
+      "  <%= render MyComponent.new(\n" \
+      "    foo: barbarbarbarbarbarbarbar,\n" \
+      "    bar: bazbazbazbazbazbazbazbaz\n" \
+      "  ) %>\n" \
+      "</div>\n",
+      ERB::Formatter.format("<div> <%=render MyComponent.new(foo:barbarbarbarbarbarbarbar,bar:bazbazbazbazbazbazbazbaz)%> </div>"),
     )
   end
 end

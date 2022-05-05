@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "lib/erb/formatter"
+require_relative "lib/erb/formatter/version"
 
 Gem::Specification.new do |spec|
   spec.name = "erb-formatter"
@@ -28,5 +28,5 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "rufo"
+  spec.add_dependency "syntax_tree", '~> 2.3'
 end
