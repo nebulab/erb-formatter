@@ -247,30 +247,6 @@ class ERB::Formatter
     end
   end
 
-  def format_code_with_rubocop(code, line_width)
-    stdin, stdout = $stdin, $stdout
-    $stdin = StringIO.new(code)
-    $stdout = StringIO.new
-
-    Thread.current['RuboCop::Cop::Layout::LineLength#max'] = line_width
-
-    @rubocop_cli ||= begin
-      RuboCop::Cop::Layout::LineLength.prepend self
-      RuboCop::CLI.new
-    end
-
-    @rubocop_cli.run([
-      '--auto-correct',
-      '--stdin', @filename,
-      '-f', 'quiet',
-    ])
-
-    $stdout.string.split(RUBOCOP_STDIN_MARKER, 2).last
-  ensure
-    $stdin, $stdout = stdin, stdout
-    Thread.current['RuboCop::Cop::Layout::LineLength#max'] = nil
-  end
-
   def format_ruby(code, autoclose: false)
     if autoclose
       code += "\nend" unless ERB_OPEN_BLOCK["#{code}\nend"]
