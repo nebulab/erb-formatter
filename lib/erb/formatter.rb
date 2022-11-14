@@ -213,8 +213,12 @@ class ERB::Formatter
 
   def format_ruby(code, autoclose: false, extra_indent: 0)
     if autoclose
-      code += "\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
-      code += "\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
+      # A long placeholder is added to prevent the transformation of
+      # multiline do-end blocks to single-line blocks with curly braces by syntax_tree.
+      placeholder = "placeholder_#{SecureRandom.hex(@line_width / 2)}"
+
+      code += "\n#{placeholder}\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
+      code += "\n#{placeholder}\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
     end
 
     p RUBY_IN_: code if @debug
@@ -229,8 +233,8 @@ class ERB::Formatter
       code
     end
 
+    code = code.split(placeholder).first.rstrip if autoclose
     lines = code.lines(chomp: true)
-    lines.delete_at(-1) if autoclose
 
     indent = "\s" * extra_indent
 
