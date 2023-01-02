@@ -1,7 +1,7 @@
 class ERB::Formatter::IgnoreList
   def initialize(contents: nil, base_dir: Dir.pwd)
     ignore_list_path = "#{base_dir}/.format-erb-ignore"
-    @contents = contents || (File.exists?(ignore_list_path) ? File.read(ignore_list_path) : '')
+    @contents = contents || (File.exist?(ignore_list_path) ? File.read(ignore_list_path) : '')
     @ignore_list = @contents.lines
   end
 
@@ -12,4 +12,3 @@ class ERB::Formatter::IgnoreList
     end
   end
 end
-
