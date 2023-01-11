@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env ruby -W:no-experimental
 
 require 'erb/formatter/command_line'
 

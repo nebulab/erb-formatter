@@ -164,7 +164,6 @@ class ERB::Formatter
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         when ERB_OPEN_BLOCK
-          ruby_code = format_ruby(ruby_code, autoclose: true)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         else
@@ -248,30 +247,6 @@ class ERB::Formatter
     end
   end
 
-  def format_code_with_rubocop(code, line_width)
-    stdin, stdout = $stdin, $stdout
-    $stdin = StringIO.new(code)
-    $stdout = StringIO.new
-
-    Thread.current['RuboCop::Cop::Layout::LineLength#max'] = line_width
-
-    @rubocop_cli ||= begin
-      RuboCop::Cop::Layout::LineLength.prepend self
-      RuboCop::CLI.new
-    end
-
-    @rubocop_cli.run([
-      '--auto-correct',
-      '--stdin', @filename,
-      '-f', 'quiet',
-    ])
-
-    $stdout.string.split(RUBOCOP_STDIN_MARKER, 2).last
-  ensure
-    $stdin, $stdout = stdin, stdout
-    Thread.current['RuboCop::Cop::Layout::LineLength#max'] = nil
-  end
-
   def format_ruby(code, autoclose: false)
     if autoclose
       code += "\nend" unless ERB_OPEN_BLOCK["#{code}\nend"]
@@ -281,7 +256,11 @@ class ERB::Formatter
 
     SyntaxTree::Command.prepend SyntaxTreeCommandPatch
 
-    code = SyntaxTree.format(code)
+    code = begin
+      SyntaxTree.format(code)
+    rescue SyntaxTree::Parser::ParseError
+      code
+    end
 
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
@@ -324,7 +303,6 @@ class ERB::Formatter
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         when ERB_OPEN_BLOCK
-          ruby_code = format_ruby(ruby_code, autoclose: true)
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
