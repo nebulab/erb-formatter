@@ -33,6 +33,10 @@ class ERB::Formatter::CommandLine
         @filename ||= '-'
       end
 
+      parser.on("--print-width WIDTH", Integer, "Set the formatted output width") do |value|
+        @width = value
+      end
+
       parser.on("--[no-]debug", "Enable debug mode") do |value|
         $DEBUG = value
       end
@@ -68,7 +72,7 @@ class ERB::Formatter::CommandLine
       if ignore_list.should_ignore_file? filename
         print code unless write
       else
-        html = ERB::Formatter.format(code, filename: filename)
+        html = ERB::Formatter.new(code, filename: filename, line_width: @width || 80)
 
         if write
           File.write(filename, html)
