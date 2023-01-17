@@ -25,13 +25,7 @@ Roadmap:
 
 Add this line to your application's Gemfile:
 
-```ruby
-gem 'erb-formatter'
-```
-
-And then execute:
-
-    $ bundle install
+    $ bundle add erb-formatter
 
 Or install it yourself as:
 
@@ -41,6 +35,12 @@ Or install it yourself as:
 
 ### From the command line
 
+Update files in-place:
+
+    $ erb-format app/views/**/*.html.erb --write
+
+or use stdin/stdout (useful for editor integrations): 
+
     $ echo "<div       > asdf  <% if 123%> <%='foobar'%> <%end-%>  </div>" | erb-format --stdin
     <div>
       asdf
@@ -48,7 +48,6 @@ Or install it yourself as:
         <%= 'foobar' %>
       <% end -%>
     </div>
-
 
 Check out `erb-format --help` for more options.
 
