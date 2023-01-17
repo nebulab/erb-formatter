@@ -1,0 +1,19 @@
+---
+foo: :bar
+bar: "BAZ"
+Baz: |
+  foobar
+  foo-bar
+  foo bar
+---
+<body class="h-full">
+<% flash.each do |type, data| %>
+<%= render AlertComponent.new(type: type, data: data) %>
+<% end %>
+
+<%= render NavbarComponent.new %>
+
+<main class="mx-auto max-w-7xl pb-10 lg:py-12 lg:px-8">
+<%= yield %>
+</main>
+</body>

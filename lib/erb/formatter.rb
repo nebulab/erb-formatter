@@ -78,7 +78,7 @@ class ERB::Formatter
     @original_source = source
     @filename = filename || '(erb)'
     @line_width = line_width
-    @source = source.dup
+    @source = remove_front_matter source.dup
     @html = +""
     @debug = debug
 
@@ -101,6 +101,13 @@ class ERB::Formatter
 
     format
     freeze
+  end
+
+  def remove_front_matter(source)
+    source.sub(/\A---\n[\s\S]*?\n---\n/) do |match|
+      @front_matter = match
+      match.gsub(/[^\n]/, ' ')
+    end
   end
 
   attr_accessor \
@@ -368,6 +375,7 @@ class ERB::Formatter
     html.gsub!(erb_tags_regexp, erb_tags)
     html.gsub!(pre_placeholders_regexp, pre_placeholders)
     html.strip!
+    html.prepend @front_matter + "\n" if @front_matter
     html << "\n"
   end
 end
