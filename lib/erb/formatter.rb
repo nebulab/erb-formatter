@@ -222,6 +222,8 @@ class ERB::Formatter
 
   def format_text(text)
     p format_text: text if @debug
+    return unless text
+
     starting_space = text.match?(/\A\s/)
 
     final_newlines_count = text.match(/(\s*)\z/m).captures.last.count("\n")
@@ -289,7 +291,7 @@ class ERB::Formatter
       if erb_scanner.scan_until(erb_tags_regexp)
         p PRE_MATCH: [erb_pre_pos, '..', erb_scanner.pre_match] if @debug
         erb_pre_match = erb_scanner.pre_match
-        erb_pre_match = erb_pre_match[erb_pre_pos..]
+        erb_pre_match = erb_pre_match[erb_pre_pos..].to_s
         erb_pre_pos = erb_scanner.pos
 
         erb_code = erb_tags[erb_scanner.captures.first]
