@@ -45,6 +45,11 @@ class ERB::Formatter::CommandLine
         puts parser
         exit
       end
+
+      parser.on("-v", "--version", "Show ERB::Formatter version number and quit") do
+        puts "ERB::Formatter #{ERB::Formatter::VERSION}"
+        exit
+      end
     end.parse!(@argv)
   end
 
