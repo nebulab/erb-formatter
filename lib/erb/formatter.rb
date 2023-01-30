@@ -264,7 +264,7 @@ class ERB::Formatter
     SyntaxTree::Command.prepend SyntaxTreeCommandPatch
 
     code = begin
-      SyntaxTree.format(code)
+      SyntaxTree.format(code, @line_width)
     rescue SyntaxTree::Parser::ParseError => error
       p RUBY_PARSE_ERROR: error if @debug
       code
