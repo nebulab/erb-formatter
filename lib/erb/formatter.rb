@@ -265,7 +265,8 @@ class ERB::Formatter
 
     code = begin
       SyntaxTree.format(code)
-    rescue SyntaxTree::Parser::ParseError
+    rescue SyntaxTree::Parser::ParseError => error
+      p RUBY_PARSE_ERROR: error if @debug
       code
     end
 
