@@ -134,4 +134,26 @@ class ERB::TestFormatter < Minitest::Test
       ERB::Formatter.format("<div> <%=render MyComponent.new(foo:barbarbarbarbarbarbarbar,bar:bazbazbazbazbazbazbazbaz)%> </div>"),
     )
   end
+
+  def test_format_ruby_with_long_lines_and_larger_line_width
+    assert_equal(
+      %{<%- vite_client_tag %>\n} +
+      %{<%= vite_typescript_tag "application", "data-turbo-track": "reload", defer: true %>\n} +
+      %{<%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload", defer: true %>\n} +
+      %{<%= stylesheet_link_tag "polaris_view_components", "data-turbo-track": "reload", defer: true %>\n} +
+      %{<%- hotwire_livereload_tags if Rails.env.development? %>\n},
+      ERB::Formatter.new(
+        %{<%- vite_client_tag %> <%= vite_typescript_tag "application", "data-turbo-track": "reload", defer: true %>\n} +
+        %{<%= stylesheet_link_tag "tailwind",\n} +
+        %{"inter-font", \n} +
+        %{"data-turbo-track": "reload", \n} +
+        %{defer: true %>\n} +
+        %{<%= stylesheet_link_tag "polaris_view_components",\n} +
+        %{"data-turbo-track": "reload",\n} +
+        %{defer: true %>\n} +
+        %{<%- hotwire_livereload_tags if Rails.env .development? %>\n},
+        line_width: 120,
+      ).to_s,
+    )
+  end
 end
