@@ -38,8 +38,6 @@ class ERB::Formatter
 
   ERB_TAG = %r{(<%(?:==|=|-|))\s*(.*?)\s*(-?%>)}m
   ERB_PLACEHOLDER = %r{erb[a-z0-9]+tag}
-  ERB_END = %r{(<%-?)\s*(end)\s*(-?%>)}
-  ERB_ELSE = %r{(<%-?)\s*(else|elsif\b.*)\s*(-?%>)}
 
   TAG_NAME = /[a-z0-9_:-]+/
   TAG_NAME_ONLY = /\A#{TAG_NAME}\z/
