@@ -53,6 +53,8 @@ class ERB::Formatter
     # is nil when the parsing is broken, meaning it's an open expression
     Ripper.sexp(code).nil?
   end.freeze
+  RUBY_CLOSE_BLOCK = /\Aend\z/
+  RUBY_REOPEN_BLOCK = /\A(else|elsif\b(.*)|when\b(.*))\z/
 
   RUBOCOP_STDIN_MARKER = "===================="
 
@@ -303,11 +305,11 @@ class ERB::Formatter
         erb_open << ' ' unless ruby_code.start_with?('#')
 
         case ruby_code
-        when /\Aend\z/
+        when RUBY_CLOSE_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        when /\A(else|elsif\b(.*)|when\b(.*))\z/
+        when RUBY_REOPEN_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
