@@ -38,8 +38,6 @@ class ERB::Formatter
 
   ERB_TAG = %r{(<%(?:==|=|-|))\s*(.*?)\s*(-?%>)}m
   ERB_PLACEHOLDER = %r{erb[a-z0-9]+tag}
-  ERB_END = %r{(<%-?)\s*(end)\s*(-?%>)}
-  ERB_ELSE = %r{(<%-?)\s*(else|elsif\b.*)\s*(-?%>)}
 
   TAG_NAME = /[a-z0-9_:-]+/
   TAG_NAME_ONLY = /\A#{TAG_NAME}\z/
@@ -49,10 +47,12 @@ class ERB::Formatter
 
   SELF_CLOSING_TAG = /\A(area|base|br|col|command|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)\z/i
 
-  ERB_OPEN_BLOCK = ->(code) do
+  RUBY_OPEN_BLOCK = ->(code) do
     # is nil when the parsing is broken, meaning it's an open expression
     Ripper.sexp(code).nil?
   end.freeze
+  RUBY_CLOSE_BLOCK = /\Aend\z/
+  RUBY_REOPEN_BLOCK = /\A(else|elsif\b(.*)|when\b(.*))\z/
 
   RUBOCOP_STDIN_MARKER = "===================="
 
@@ -146,45 +146,6 @@ class ERB::Formatter
     attr_html
   end
 
-  def format_erb_attributes(string)
-    erb_scanner = StringScanner.new(string.to_s)
-    erb_pre_pos = 0
-    until erb_scanner.eos?
-      if erb_scanner.scan_until(erb_tags_regexp)
-        erb_pre_match = erb_scanner.pre_match
-        erb_pre_match = erb_pre_match[erb_pre_pos..]
-        erb_pre_pos = erb_scanner.pos
-
-        erb_code = erb_tags[erb_scanner.captures.first]
-
-        format_attributes(erb_pre_match)
-
-        erb_open, ruby_code, erb_close = ERB_TAG.match(erb_code).captures
-        full_erb_tag = "#{erb_open} #{ruby_code} #{erb_close}"
-
-        case ruby_code
-        when /\Aend\z/
-          tag_stack_pop('%erb%', ruby_code)
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        when /\A(else|elsif\b(.*))\z/
-          tag_stack_pop('%erb%', ruby_code)
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-          tag_stack_push('%erb%', ruby_code)
-        when ERB_OPEN_BLOCK
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-          tag_stack_push('%erb%', ruby_code)
-        else
-          ruby_code = format_ruby(ruby_code, autoclose: false)
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        end
-      else
-        rest = erb_scanner.rest.to_s
-        format_erb_attributes(rest)
-        erb_scanner.terminate
-      end
-    end
-  end
-
   def tag_stack_push(tag_name, code)
     tag_stack << [tag_name, code]
     p PUSH: tag_stack if @debug
@@ -258,8 +219,8 @@ class ERB::Formatter
 
   def format_ruby(code, autoclose: false)
     if autoclose
-      code += "\nend" unless ERB_OPEN_BLOCK["#{code}\nend"]
-      code += "\n}" unless ERB_OPEN_BLOCK["#{code}\n}"]
+      code += "\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
+      code += "\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
     end
     p RUBY_IN_: code if @debug
 
@@ -303,16 +264,16 @@ class ERB::Formatter
         erb_open << ' ' unless ruby_code.start_with?('#')
 
         case ruby_code
-        when /\Aend\z/
+        when RUBY_CLOSE_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        when /\A(else|elsif\b(.*))\z/
+        when RUBY_REOPEN_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
-        when ERB_OPEN_BLOCK
+        when RUBY_OPEN_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
