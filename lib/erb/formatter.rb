@@ -307,7 +307,7 @@ class ERB::Formatter
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        when /\A(else|elsif\b(.*))\z/
+        when /\A(else|elsif\b(.*)|when\b(.*))\z/
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)

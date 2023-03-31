@@ -1,0 +1,26 @@
+<div>
+  <% if payment_method.present? %>
+    <% case payment_method.class.to_s %>
+    <% when 'Foo::PaymentMethod::FooCreditCard' %>
+      <% if payment_method.active %>
+        <span class="card-icon <%= payment_source.cc_type %>"></span>
+        *<%= payment_source.last_digits %>
+        <%= payment_source.month %>/<%= payment_source.year %>
+      <% else %>
+        <%= t(".payment.card_removed_or_expired") %>
+      <% end %>
+    <% when 'Foo::PaymentMethod::Bar' %>
+      <span><%= t(".payment.invoice") %></span>
+    <% when 'Foo::PaymentMethod' %>
+      <span><%= t(".payment.stripe_invoice") %></span>
+    <% else %>
+      <% Rails.logger.error.report(
+        StandardError.new(
+          "No human readable name found for payment method #{payment_method.class}"
+        )
+      ) %>
+    <% end %>
+  <% else %>
+    <%= t(".payment.no_payment_method_found") %>
+  <% end %>
+</div>
