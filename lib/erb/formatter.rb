@@ -49,7 +49,7 @@ class ERB::Formatter
 
   SELF_CLOSING_TAG = /\A(area|base|br|col|command|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)\z/i
 
-  ERB_OPEN_BLOCK = ->(code) do
+  RUBY_OPEN_BLOCK = ->(code) do
     # is nil when the parsing is broken, meaning it's an open expression
     Ripper.sexp(code).nil?
   end.freeze
@@ -170,7 +170,7 @@ class ERB::Formatter
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
-        when ERB_OPEN_BLOCK
+        when RUBY_OPEN_BLOCK
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         else
@@ -258,8 +258,8 @@ class ERB::Formatter
 
   def format_ruby(code, autoclose: false)
     if autoclose
-      code += "\nend" unless ERB_OPEN_BLOCK["#{code}\nend"]
-      code += "\n}" unless ERB_OPEN_BLOCK["#{code}\n}"]
+      code += "\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
+      code += "\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
     end
     p RUBY_IN_: code if @debug
 
@@ -312,7 +312,7 @@ class ERB::Formatter
           tag_stack_pop('%erb%', ruby_code)
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
-        when ERB_OPEN_BLOCK
+        when RUBY_OPEN_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
