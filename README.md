@@ -33,13 +33,18 @@ Or install it yourself as:
 
 ## Usage
 
+### From [Visual Studio Code](https://code.visualstudio.com)
+
+Just install the [Ruby ERB::Formatter 🪜](https://marketplace.visualstudio.com/items?itemName=elia.erb-formatter) extension
+and follow the setup instructions there.
+
 ### From the command line
 
 Update files in-place:
 
     $ erb-format app/views/**/*.html.erb --write
 
-or use stdin/stdout (useful for editor integrations): 
+or use stdin/stdout (useful for editor integrations):
 
     $ echo "<div       > asdf  <% if 123%> <%='foobar'%> <%end-%>  </div>" | erb-format --stdin
     <div>
@@ -51,7 +56,7 @@ or use stdin/stdout (useful for editor integrations):
 
 Check out `erb-format --help` for more options.
 
-### From Ruby
+### From [Ruby](https://www.ruby-lang.org/en/)
 
 ```ruby
 require 'erb/formatter'
@@ -76,7 +81,7 @@ ERB
 #   </div>
 ```
 
-### With `lint-staged`
+### With [`lint-staged`](https://github.com/okonet/lint-staged#readme)
 
 Add the gem to your gemfile and the following to your `package.json`:
 
@@ -87,7 +92,7 @@ Add the gem to your gemfile and the following to your `package.json`:
 }
 ```
 
-### As a TextMate plugin
+### As a [TextMate](http://macromates.com) command
 
 Create a command with the following settings:
 
