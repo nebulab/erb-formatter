@@ -109,6 +109,16 @@ cd "$TM_PROJECT_DIRECTORY"
 bundle exec erb-format --stdin-filename "$TM_FILEPATH" < /dev/stdin 2> /dev/stdout
 ```
 
+### With [(Neo)VIM ALE](https://github.com/dense-analysis/ale)
+
+Enable `erb-formatter` as a fixer in the ALE config:
+
+```vim
+let g:ale_fixers = {
+\   'eruby': ['erb-formatter'],
+\}
+```
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
