@@ -34,7 +34,7 @@ class ERB::Formatter
   BAD_ATTR = %r{#{ATTR_NAME}=\s+}
   QUOTED_ATTR = Regexp.union(SINGLE_QUOTE_ATTR, DOUBLE_QUOTE_ATTR)
   ATTR = Regexp.union(SINGLE_QUOTE_ATTR, DOUBLE_QUOTE_ATTR, UNQUOTED_ATTR, UNQUOTED_VALUE)
-  MULTILINE_ATTR_NAMES = %w[class data-action]
+  MULTILINE_ATTR_NAMES = %w[data-action]
 
   ERB_TAG = %r{(<%(?:==|=|-|))\s*(.*?)\s*(-?%>)}m
   ERB_PLACEHOLDER = %r{erb[a-z0-9]+tag}
