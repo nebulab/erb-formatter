@@ -1,11 +1,11 @@
 # frozen_string_literal: false
 
 require 'pp'
-require "erb"
-require "ripper"
-require 'securerandom'
+require 'erb'
+require 'yaml'
 require 'strscan'
 require 'stringio'
+require 'securerandom'
 require 'erb/formatter/version'
 
 require 'syntax_tree'
@@ -104,10 +104,13 @@ class ERB::Formatter
   end
 
   def remove_front_matter(source)
-    source.sub(/\A---\n[\s\S]*?\n---\n/) do |match|
-      @front_matter = match
-      match.gsub(/[^\n]/, ' ')
-    end
+    return source unless source.start_with?("---\n")
+
+    first_body_line = YAML.parse(source).children.first.end_line + 1
+    lines = source.lines
+
+    @front_matter = lines[0...first_body_line].join
+    lines[first_body_line..].join
   end
 
   attr_accessor \
