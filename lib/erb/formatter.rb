@@ -124,14 +124,20 @@ class ERB::Formatter
 
     attrs.scan(ATTR).flatten.each do |attr|
       attr.strip!
-      full_attr = indented(attr)
       name, value = attr.split('=', 2)
+
+      if value.nil?
+        attr_html << indented("#{name}")
+        next
+      end
+
+      value_parts = value[1...-1].strip.split(/\s+/)
+
+      full_attr = indented("#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}")
 
       if full_attr.size > line_width && MULTILINE_ATTR_NAMES.include?(name) && attr.match?(QUOTED_ATTR)
         attr_html << indented("#{name}=#{value[0]}")
         tag_stack_push('attr"', value)
-
-        value_parts = value[1...-1].strip.split(/\s+/)
 
         if !@single_class_per_line && name == 'class'
           line = value_parts.shift
