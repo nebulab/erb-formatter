@@ -15,7 +15,8 @@ class ERB::TestFormatter < Minitest::Test
     Dir["#{__dir__}/../fixtures/*.html.erb"].each do |erb_path|
       expected_path = erb_path.chomp('.erb') + '.expected.erb'
 
-      # File.write expected_path, ERB::Formatter.format(File.read(erb_path))
+      File.write(expected_path, ERB::Formatter.format(File.read(erb_path))) if ENV.key?("UPDATE_TEST_FIXTURES")
+
       assert_equal(File.read(expected_path), ERB::Formatter.format(File.read(erb_path)), "Formatting of #{erb_path} failed")
     end
   end
@@ -127,9 +128,9 @@ class ERB::TestFormatter < Minitest::Test
     assert_equal(
       "<div>\n" \
       "  <%= render MyComponent.new(\n" \
-      "    foo: barbarbarbarbarbarbarbar,\n" \
-      "    bar: bazbazbazbazbazbazbazbaz\n" \
-      "  ) %>\n" \
+      "               foo: barbarbarbarbarbarbarbar,\n" \
+      "               bar: bazbazbazbazbazbazbazbaz\n" \
+      "             ) %>\n" \
       "</div>\n",
       ERB::Formatter.format("<div> <%=render MyComponent.new(foo:barbarbarbarbarbarbarbar,bar:bazbazbazbazbazbazbazbaz)%> </div>"),
     )

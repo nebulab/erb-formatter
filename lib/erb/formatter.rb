@@ -11,16 +11,6 @@ require 'erb/formatter/version'
 require 'syntax_tree'
 
 class ERB::Formatter
-  module SyntaxTreeCommandPatch
-    def format(q)
-      q.group do
-        q.format(message)
-        q.text(" ")
-        q.format(arguments) # WAS: q.nest(message.value.length + 1) { q.format(arguments) }
-      end
-    end
-  end
-
   autoload :IgnoreList, 'erb/formatter/ignore_list'
 
   class Error < StandardError; end
@@ -193,8 +183,12 @@ class ERB::Formatter
 
   def indented(string, strip: true)
     string = string.strip if strip
-    indent = "  " * tag_stack.size
+    indent = "\s" * indentation_width
     "\n#{indent}#{string}"
+  end
+
+  def indentation_width
+    2 * tag_stack.size
   end
 
   def format_text(text)
@@ -233,26 +227,41 @@ class ERB::Formatter
     end
   end
 
-  def format_ruby(code, autoclose: false)
+  def format_ruby(code, autoclose: false, extra_indent: 0)
     if autoclose
-      code += "\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
-      code += "\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
+      # A long placeholder is added to prevent the transformation of
+      # multiline do-end blocks to single-line blocks with curly braces by syntax_tree.
+      placeholder = "placeholder_#{SecureRandom.hex(@line_width / 2)}"
+
+      code += "\n#{placeholder}\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
+      code += "\n#{placeholder}\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
     end
+
     p RUBY_IN_: code if @debug
 
-    SyntaxTree::Command.prepend SyntaxTreeCommandPatch
-
     code = begin
-      SyntaxTree.format(code, @line_width)
+      SyntaxTree.format(
+        code,
+        @line_width - (indentation_width + extra_indent)
+      )
     rescue SyntaxTree::Parser::ParseError => error
       p RUBY_PARSE_ERROR: error if @debug
       code
     end
 
-    lines = code.strip.lines
-    lines = lines[0...-1] if autoclose
-    code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join.strip
+    code = code.split(placeholder).first.rstrip if autoclose
+    lines = code.lines(chomp: true)
+
+    indent = "\s" * extra_indent
+
+    code = lines.reduce(String.new) do |string, line|
+      string << indented("#{indent}#{line}", strip: false)
+    end
+
+    code.lstrip!
+
     p RUBY_OUT: code if @debug
+
     code
   end
 
@@ -290,11 +299,12 @@ class ERB::Formatter
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         when RUBY_OPEN_BLOCK
+          ruby_code = format_ruby(ruby_code, autoclose: true, extra_indent: erb_open.size)
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
           tag_stack_push('%erb%', ruby_code)
         else
-          ruby_code = format_ruby(ruby_code, autoclose: false)
+          ruby_code = format_ruby(ruby_code, autoclose: false, extra_indent: erb_open.size)
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
         end
