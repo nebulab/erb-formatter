@@ -56,13 +56,6 @@ class ERB::Formatter
 
   RUBOCOP_STDIN_MARKER = "===================="
 
-  # Override the max line length to account from already indented ERB
-  module RubocopForcedMaxLineLength
-    def max
-      Thread.current['RuboCop::Cop::Layout::LineLength#max'] || super
-    end
-  end
-
   module DebugShovel
     def <<(string)
       puts "ADDING: #{string.inspect} FROM:\n  #{caller(1, 5).join("\n  ")}"
@@ -74,13 +67,14 @@ class ERB::Formatter
     new(source, filename: filename).html
   end
 
-  def initialize(source, line_width: 80, filename: nil, debug: $DEBUG)
+  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, debug: $DEBUG)
     @original_source = source
     @filename = filename || '(erb)'
     @line_width = line_width
     @source = remove_front_matter source.dup
     @html = +""
     @debug = debug
+    @single_class_per_line = single_class_per_line
 
     html.extend DebugShovel if @debug
 
@@ -127,6 +121,7 @@ class ERB::Formatter
 
     attr_html = ""
     tag_stack_push(['attr='], attrs)
+
     attrs.scan(ATTR).flatten.each do |attr|
       attr.strip!
       full_attr = indented(attr)
@@ -135,15 +130,33 @@ class ERB::Formatter
       if full_attr.size > line_width && MULTILINE_ATTR_NAMES.include?(name) && attr.match?(QUOTED_ATTR)
         attr_html << indented("#{name}=#{value[0]}")
         tag_stack_push('attr"', value)
-        value[1...-1].strip.split(/\s+/).each do |value_part|
-          attr_html << indented(value_part)
+
+        value_parts = value[1...-1].strip.split(/\s+/)
+
+        if !@single_class_per_line && name == 'class'
+          line = value_parts.shift
+          value_parts.each do |value_part|
+            if (line.size + value_part.size + 1) <= line_width
+              line << " #{value_part}"
+            else
+              attr_html << indented(line)
+              line = value_part
+            end
+          end
+          attr_html << indented(line) if line
+        else
+          value_parts.each do |value_part|
+            attr_html << indented(value_part)
+          end
         end
+
         tag_stack_pop('attr"', value)
         attr_html << indented(value[-1])
       else
         attr_html << full_attr
       end
     end
+
     tag_stack_pop(['attr='], attrs)
     attr_html << indented("")
     attr_html
