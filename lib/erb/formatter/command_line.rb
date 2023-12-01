@@ -10,7 +10,7 @@ class ERB::Formatter::CommandLine
     @argv = argv.dup
     @stdin = stdin
 
-    @write, @filename, @read_stdin, @code = nil
+    @write, @filename, @read_stdin, @code, @single_class_per_line = nil
 
     OptionParser.new do |parser|
       parser.banner = "Usage: #{$0} FILENAME... --write"
@@ -35,6 +35,10 @@ class ERB::Formatter::CommandLine
 
       parser.on("--print-width WIDTH", Integer, "Set the formatted output width") do |value|
         @width = value
+      end
+
+      parser.on("--single-class-per-line", "Print each class on a separate line") do |value|
+        @single_class_per_line = value
       end
 
       parser.on("--[no-]debug", "Enable debug mode") do |value|
@@ -77,7 +81,7 @@ class ERB::Formatter::CommandLine
       if ignore_list.should_ignore_file? filename
         print code unless write
       else
-        html = ERB::Formatter.new(code, filename: filename, line_width: @width || 80)
+        html = ERB::Formatter.new(code, filename: filename, line_width: @width || 80, single_class_per_line: @single_class_per_line)
 
         if write
           File.write(filename, html)
