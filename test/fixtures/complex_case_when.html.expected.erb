@@ -16,8 +16,8 @@
     <% else %>
       <% Rails.logger.error.report(
         StandardError.new(
-          "No human readable name found for payment method #{payment_method.class}"
-        )
+          "No human readable name found for payment method #{payment_method.class}",
+        ),
       ) %>
     <% end %>
   <% else %>

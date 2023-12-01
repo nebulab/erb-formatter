@@ -128,7 +128,7 @@ class ERB::TestFormatter < Minitest::Test
       "<div>\n" \
       "  <%= render MyComponent.new(\n" \
       "    foo: barbarbarbarbarbarbarbar,\n" \
-      "    bar: bazbazbazbazbazbazbazbaz\n" \
+      "    bar: bazbazbazbazbazbazbazbaz,\n" \
       "  ) %>\n" \
       "</div>\n",
       ERB::Formatter.format("<div> <%=render MyComponent.new(foo:barbarbarbarbarbarbarbar,bar:bazbazbazbazbazbazbazbaz)%> </div>"),
