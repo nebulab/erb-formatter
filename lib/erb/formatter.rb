@@ -48,10 +48,17 @@ class ERB::Formatter
 
   SELF_CLOSING_TAG = /\A(area|base|br|col|command|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)\z/i
 
-  RUBY_OPEN_BLOCK = ->(code) do
-    # is nil when the parsing is broken, meaning it's an open expression
-    Ripper.sexp(code).nil?
-  end.freeze
+  begin
+    require 'prism' # ruby 3.3
+    RUBY_OPEN_BLOCK = Prism.method(:parse_failure?)
+  rescue LoadError
+    require 'ripper'
+    RUBY_OPEN_BLOCK = ->(code) do
+      # is nil when the parsing is broken, meaning it's an open expression
+      Ripper.sexp(code).nil?
+    end.freeze
+  end
+
   RUBY_CLOSE_BLOCK = /\Aend\z/
   RUBY_REOPEN_BLOCK = /\A(else|elsif\b(.*)|when\b(.*))\z/
 
