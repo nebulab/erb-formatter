@@ -75,7 +75,7 @@ class ERB::Formatter
     new(source, filename: filename).html
   end
 
-  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, debug: $DEBUG)
+  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, debug: $DEBUG)
     @original_source = source
     @filename = filename || '(erb)'
     @line_width = line_width
@@ -83,6 +83,7 @@ class ERB::Formatter
     @html = +""
     @debug = debug
     @single_class_per_line = single_class_per_line
+    @css_class_sorter = css_class_sorter
 
     html.extend DebugShovel if @debug
 
@@ -125,7 +126,9 @@ class ERB::Formatter
     return "" if attrs.strip.empty?
 
     plain_attrs = attrs.tr("\n", " ").squeeze(" ").gsub(erb_tags_regexp, erb_tags)
-    return " #{plain_attrs}" if "<#{tag_name} #{plain_attrs}#{tag_closing}".size <= line_width
+    within_line_width = "<#{tag_name} #{plain_attrs}#{tag_closing}".size <= line_width
+
+    return " #{plain_attrs}" if within_line_width && !@css_class_sorter && !plain_attrs.match?(/ class=/)
 
     attr_html = ""
     tag_stack_push(['attr='], attrs)
@@ -140,8 +143,10 @@ class ERB::Formatter
       end
 
       value_parts = value[1...-1].strip.split(/\s+/)
+      value_parts.sort_by!(&@css_class_sorter) if name == 'class' && @css_class_sorter
 
-      full_attr = indented("#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}")
+      full_attr = "#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}"
+      full_attr = within_line_width ? " #{full_attr}" : indented(full_attr)
 
       if full_attr.size > line_width && MULTILINE_ATTR_NAMES.include?(name) && attr.match?(QUOTED_ATTR)
         attr_html << indented("#{name}=#{value[0]}")
@@ -165,14 +170,14 @@ class ERB::Formatter
         end
 
         tag_stack_pop('attr"', value)
-        attr_html << indented(value[-1])
+        attr_html << (within_line_width ? value[-1] : indented(value[-1]))
       else
         attr_html << full_attr
       end
     end
 
     tag_stack_pop(['attr='], attrs)
-    attr_html << indented("")
+    attr_html << indented("") unless within_line_width
     attr_html
   end
 
