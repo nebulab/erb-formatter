@@ -3,6 +3,19 @@ require 'erb/formatter'
 require 'optparse'
 
 class ERB::Formatter::CommandLine
+  def self.tailwindcss_class_sorter(css_path)
+    css = File.read(css_path)
+
+    css = css.tr("\n", " ").gsub(%r{\/\*.*?\*\/},"") # remove comments
+    css = css.gsub(%r<@media.*?\{>, "") # strip media queries
+    css = css.scan(%r<(?:^|\}|\{) *(\S.*?) *\{>).join(" ") # extract selectors
+    classes = css.tr(","," ").split(" ").grep(/\./).uniq.map { _1.split('.').last.gsub("\\", "") }
+    indexed_classes = Hash[classes.zip((0...classes.size).to_a)]
+
+    ->(class_name) do
+      indexed_classes[class_name] || classes.index { _1.start_with?(class_name) } || -1
+    end
+  end
 
   attr_reader :write, :filename, :read_stdin
 
@@ -41,6 +54,10 @@ class ERB::Formatter::CommandLine
         @single_class_per_line = value
       end
 
+      parser.on("--tailwind-output-path PATH", "Set the path to the tailwind output file") do |value|
+        @tailwind_output_path = value
+      end
+
       parser.on("--[no-]debug", "Enable debug mode") do |value|
         $DEBUG = value
       end
@@ -73,11 +90,21 @@ class ERB::Formatter::CommandLine
       end
     end
 
+    if @tailwind_output_path
+      css_class_sorter = self.class.tailwindcss_class_sorter(@tailwind_output_path)
+    end
+
     files.each do |(filename, code)|
       if ignore_list.should_ignore_file? filename
         print code unless write
       else
-        html = ERB::Formatter.new(code, filename: filename, line_width: @width || 80, single_class_per_line: @single_class_per_line)
+        html = ERB::Formatter.new(
+          code,
+          filename: filename,
+          line_width: @width || 80,
+          single_class_per_line: @single_class_per_line,
+          css_class_sorter: css_class_sorter
+        )
 
         if write
           File.write(filename, html)

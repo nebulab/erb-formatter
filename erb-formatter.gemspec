@@ -30,5 +30,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "syntax_tree", '~> 6.0'
 
+  spec.add_development_dependency "tailwindcss-rails", "~> 2.0"
   spec.add_development_dependency "m", "~> 1.0"
 end
