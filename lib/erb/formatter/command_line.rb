@@ -61,10 +61,6 @@ class ERB::Formatter::CommandLine
     @ignore_list ||= ERB::Formatter::IgnoreList.new
   end
 
-  def ignore?(filename)
-
-  end
-
   def run
     if read_stdin
       abort "Can't read both stdin and a list of files" unless @argv.empty?
