@@ -29,4 +29,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "syntax_tree", '~> 6.0'
+
+  spec.add_development_dependency "m", "~> 1.0"
 end
