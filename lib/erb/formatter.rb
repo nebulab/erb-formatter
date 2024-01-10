@@ -136,6 +136,10 @@ class ERB::Formatter
     attrs.scan(ATTR).flatten.each do |attr|
       attr.strip!
       name, value = attr.split('=', 2)
+      if UNQUOTED_ATTR =~ attr
+        attr_html << indented("#{name}=\"#{value}\"")
+        next
+      end
 
       if value.nil?
         attr_html << indented("#{name}")
