@@ -119,6 +119,23 @@ let g:ale_fixers = {
 \}
 ```
 
+### With [Zed](https://zed.dev/) editor
+
+With the gem installed, configure `settings.json` to use the formatter as an external command
+
+```json
+"language_overrides": {
+  "ERB": {
+    "formatter": {
+      "external": {
+        "command": "erb-format",
+        "arguments": ["--stdin", "--print-width", "80"]
+      }
+    }
+  }
+}
+```
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
