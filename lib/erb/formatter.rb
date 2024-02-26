@@ -28,7 +28,7 @@ class ERB::Formatter
 
   # https://stackoverflow.com/a/317081
   ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
-  UNQUOTED_VALUE = ATTR_NAME
+  UNQUOTED_VALUE = %r{[^<>'"\s]+}
   UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}
   SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}m
   DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*?")}m
@@ -142,7 +142,7 @@ class ERB::Formatter
         next
       end
 
-      if value[0] != '"' && value[0] != "'"
+      if /\A#{UNQUOTED_VALUE}\z/o.match?(value)
         attr_html << indented("#{name}=\"#{value}\"")
         next
       end
