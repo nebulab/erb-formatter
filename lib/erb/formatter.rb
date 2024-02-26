@@ -26,6 +26,8 @@ class ERB::Formatter
 
   class Error < StandardError; end
 
+  SPACES = /\s+/m
+
   # https://stackoverflow.com/a/317081
   ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
   UNQUOTED_VALUE = %r{[^<>'"\s]+}
@@ -147,7 +149,7 @@ class ERB::Formatter
         next
       end
 
-      value_parts = value[1...-1].strip.split(/\s+/)
+      value_parts = value[1...-1].strip.split(SPACES)
       value_parts.sort_by!(&@css_class_sorter) if name == 'class' && @css_class_sorter
 
       full_attr = "#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}"
@@ -232,7 +234,7 @@ class ERB::Formatter
 
     return if text.match?(/\A\s*\z/m) # empty
 
-    text = text.gsub(/\s+/m, ' ').strip
+    text = text.gsub(SPACES, ' ').strip
 
     offset = indented("").size
     # Restore full line width if there are less than 40 columns available
