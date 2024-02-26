@@ -26,9 +26,11 @@ class ERB::Formatter
 
   class Error < StandardError; end
 
+  SPACES = /\s+/m
+
   # https://stackoverflow.com/a/317081
   ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
-  UNQUOTED_VALUE = ATTR_NAME
+  UNQUOTED_VALUE = %r{[^<>'"\s]+}
   UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}
   SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}m
   DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*?")}m
@@ -136,17 +138,18 @@ class ERB::Formatter
     attrs.scan(ATTR).flatten.each do |attr|
       attr.strip!
       name, value = attr.split('=', 2)
-      if UNQUOTED_ATTR =~ attr
-        attr_html << indented("#{name}=\"#{value}\"")
-        next
-      end
 
       if value.nil?
         attr_html << indented("#{name}")
         next
       end
 
-      value_parts = value[1...-1].strip.split(/\s+/)
+      if /\A#{UNQUOTED_VALUE}\z/o.match?(value)
+        attr_html << indented("#{name}=\"#{value}\"")
+        next
+      end
+
+      value_parts = value[1...-1].strip.split(SPACES)
       value_parts.sort_by!(&@css_class_sorter) if name == 'class' && @css_class_sorter
 
       full_attr = "#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}"
@@ -231,7 +234,7 @@ class ERB::Formatter
 
     return if text.match?(/\A\s*\z/m) # empty
 
-    text = text.gsub(/\s+/m, ' ').strip
+    text = text.gsub(SPACES, ' ').strip
 
     offset = indented("").size
     # Restore full line width if there are less than 40 columns available
