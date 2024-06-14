@@ -1,0 +1,29 @@
+<section>
+  <div class="flex flex-col pb-4 mx-auto">
+    <div
+      class="
+        w-full bg-white rounded-lg shadow sm:max-w-lg md:mt-0 xl:p-0 dark:bg-gray-800
+        dark:border dark:border-gray-700
+      "
+    >
+      <div class="p-6 space-y-4 sm:p-8 md:space-y-6">
+        <%= yield %>
+      </div>
+      <%= next %>
+    </div>
+    <%= break %>
+  </div>
+</section>
+
+<div id="flash">
+  <% flash.each do |type, message| %>
+    <% next unless message.is_a?(String) %>
+
+    <% case type %>
+    <% when "alert" %>
+      <%= render("shared/alert_flash", message: message) %>
+    <% when "notice" %>
+      <%= render("shared/notice_flash", message: message) %>
+    <% end %>
+  <% end %>
+</div>
