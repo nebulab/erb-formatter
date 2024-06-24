@@ -29,7 +29,7 @@ class ERB::Formatter
   SPACES = /\s+/m
 
   # https://stackoverflow.com/a/317081
-  ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
+  ATTR_NAME = %r{[^\r\n\t\f\v\!= '"<>]*[^\r\n\t\f\v\!= '"<>/]} # not ending with a slash
   UNQUOTED_VALUE = %r{[^<>'"\s]+}
   UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}
   SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}m
