@@ -62,6 +62,10 @@ class ERB::Formatter::CommandLine
         $DEBUG = value
       end
 
+      parser.on("--fail-level LEVEL", "'check' exits(1) on any formatting changes)") do |value|
+        @fail_level = value
+      end
+
       parser.on("-h", "--help", "Prints this help") do
         puts parser
         exit
@@ -94,6 +98,8 @@ class ERB::Formatter::CommandLine
       css_class_sorter = self.class.tailwindcss_class_sorter(@tailwind_output_path)
     end
 
+    files_changed = false
+
     files.each do |(filename, code)|
       if ignore_list.should_ignore_file? filename
         print code unless write
@@ -106,6 +112,8 @@ class ERB::Formatter::CommandLine
           css_class_sorter: css_class_sorter
         )
 
+        files_changed = true if html.to_s != code
+
         if write
           File.write(filename, html)
         else
@@ -113,5 +121,6 @@ class ERB::Formatter::CommandLine
         end
       end
     end
+    exit(1) if files_changed && @fail_level == "check"
   end
 end

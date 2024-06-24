@@ -20,6 +20,27 @@ class ERB::TestFormatter < Minitest::Test
     end
   end
 
+  def test_error_on_unformattable_file
+    cli = ERB::Formatter::CommandLine.new(["test/fixtures/unmatched_error.erb"])
+    error = assert_raises RuntimeError do |error|
+      cli.run
+    end
+    assert_match(/Unmatched close tag/, error.message)
+  end
+
+  def test_fail_level_flag_check_with_changes
+    cli = ERB::Formatter::CommandLine.new(["--fail-level", "check", "test/fixtures/attributes.html.erb"])
+    error = assert_raises SystemExit do
+      cli.run
+    end
+    assert_equal(1, error.status)
+  end
+
+  def test_fail_level_flag_check_without_changes
+    cli = ERB::Formatter::CommandLine.new(["--fail-level", "check", "test/fixtures/attributes.html.expected.erb"])
+    cli.run
+  end
+
   def test_format_text_with_extra_long_text
     text = <<~HTML * 30
       Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore
