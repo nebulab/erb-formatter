@@ -31,14 +31,14 @@ class ERB::TestFormatter < Minitest::Test
   def test_fail_level_flag_check_with_changes
     cli = ERB::Formatter::CommandLine.new(["--fail-level", "check", "test/fixtures/attributes.html.erb"])
     error = assert_raises SystemExit do
-      cli.run
+      assert_output(/src="image.jpg"/) { cli.run }
     end
     assert_equal(1, error.status)
   end
 
   def test_fail_level_flag_check_without_changes
     cli = ERB::Formatter::CommandLine.new(["--fail-level", "check", "test/fixtures/attributes.html.expected.erb"])
-    cli.run
+    assert_output(/src="image.jpg"/) { cli.run }
   end
 
   def test_format_text_with_extra_long_text
