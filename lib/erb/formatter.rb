@@ -61,6 +61,7 @@ class ERB::Formatter
     end.freeze
   end
 
+  RUBY_STANDALONE_BLOCK = /\A(yield|next)\b/
   RUBY_CLOSE_BLOCK = /\Aend\z/
   RUBY_REOPEN_BLOCK = /\A(else|elsif\b(.*)|when\b(.*))\z/
 
@@ -306,6 +307,10 @@ class ERB::Formatter
         erb_open << ' ' unless ruby_code.start_with?('#')
 
         case ruby_code
+        when RUBY_STANDALONE_BLOCK
+          ruby_code = format_ruby(ruby_code, autoclose: false)
+          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
+          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
         when RUBY_CLOSE_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)
