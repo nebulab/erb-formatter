@@ -270,7 +270,10 @@ class ERB::Formatter
     SyntaxTree::Command.prepend SyntaxTreeCommandPatch
 
     code = begin
-      width = @line_width - tag_stack.size * 2
+      # TODO: For single-lines, 7 should be subtracted instead of 2: 3 for opening, 2 for closing and 2 surrounding spaces
+      # Subtract 2 for multiline indentation or for the surrounding tags
+      # Then subtract twice the tag_stack size to respect indentation
+      width = @line_width - 2 - tag_stack.size * 2
       SyntaxTree.format(code, width)
     rescue SyntaxTree::Parser::ParseError => error
       p RUBY_PARSE_ERROR: error if @debug
