@@ -308,7 +308,15 @@ class ERB::Formatter
         erb_open, ruby_code, erb_close = ERB_TAG.match(erb_code).captures
         erb_open << ' ' unless ruby_code.start_with?('#')
 
-        if [RUBY_CLOSE_BLOCK, RUBY_REOPEN_BLOCK, RUBY_OPEN_BLOCK].none? { |r| r === ruby_code }
+        block_type = case ruby_code
+        when RUBY_STANDALONE_BLOCK then :standalone
+        when RUBY_CLOSE_BLOCK then :close
+        when RUBY_REOPEN_BLOCK then :reopen
+        when RUBY_OPEN_BLOCK then :open
+        else :other
+        end
+
+        if %i[standalone other].include? block_type
           ruby_code = format_ruby(ruby_code, autoclose: false)
         end
 
@@ -318,9 +326,9 @@ class ERB::Formatter
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
         end
 
-        tag_stack_pop('%erb%', ruby_code) if [RUBY_CLOSE_BLOCK, RUBY_REOPEN_BLOCK].any? { |r| r === ruby_code }
+        tag_stack_pop('%erb%', ruby_code) if %i[close reopen].include? block_type
         html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        tag_stack_push('%erb%', ruby_code) if [RUBY_REOPEN_BLOCK, RUBY_OPEN_BLOCK].any? { |r| r === ruby_code }
+        tag_stack_push('%erb%', ruby_code) if %i[reopen open].include? block_type
       else
         p ERB_REST: erb_scanner.rest if @debug
         rest = erb_scanner.rest.to_s
