@@ -319,7 +319,10 @@ class ERB::Formatter
         else :other
         end
 
-        if %i[standalone other].include? block_type
+        if block_type == :open && ruby_code.end_with?(" do") || ruby_code.end_with?("{")
+          suffix = ruby_code[-3..-1] == " do" ? " do" : "{"
+          ruby_code = "#{format_ruby(ruby_code.chomp(suffix), autoclose: false)}#{suffix}"
+        elsif %i[standalone other].include? block_type
           ruby_code = format_ruby(ruby_code, autoclose: false)
         end
 
