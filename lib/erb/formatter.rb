@@ -270,7 +270,8 @@ class ERB::Formatter
     SyntaxTree::Command.prepend SyntaxTreeCommandPatch
 
     code = begin
-      SyntaxTree.format(code, @line_width)
+      width = @line_width - tag_stack.size * 2
+      SyntaxTree.format(code, width)
     rescue SyntaxTree::Parser::ParseError => error
       p RUBY_PARSE_ERROR: error if @debug
       code
@@ -278,7 +279,8 @@ class ERB::Formatter
 
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
-    code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join.strip
+    code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join
+    code.strip! if lines.one?
     p RUBY_OUT: code if @debug
     code
   end
@@ -306,29 +308,19 @@ class ERB::Formatter
         erb_open, ruby_code, erb_close = ERB_TAG.match(erb_code).captures
         erb_open << ' ' unless ruby_code.start_with?('#')
 
-        case ruby_code
-        when RUBY_STANDALONE_BLOCK
+        if [RUBY_CLOSE_BLOCK, RUBY_REOPEN_BLOCK, RUBY_OPEN_BLOCK].none? { |r| r === ruby_code }
           ruby_code = format_ruby(ruby_code, autoclose: false)
-          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        when RUBY_CLOSE_BLOCK
-          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
-          tag_stack_pop('%erb%', ruby_code)
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-        when RUBY_REOPEN_BLOCK
-          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
-          tag_stack_pop('%erb%', ruby_code)
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-          tag_stack_push('%erb%', ruby_code)
-        when RUBY_OPEN_BLOCK
-          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
-          tag_stack_push('%erb%', ruby_code)
-        else
-          ruby_code = format_ruby(ruby_code, autoclose: false)
-          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
-          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
         end
+
+        if ruby_code.include?("\n")
+          full_erb_tag = "#{erb_open}#{ruby_code.gsub(/^/, '  ')}#{indented(erb_close)}"
+        else
+          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
+        end
+
+        tag_stack_pop('%erb%', ruby_code) if [RUBY_CLOSE_BLOCK, RUBY_REOPEN_BLOCK].any? { |r| r === ruby_code }
+        html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
+        tag_stack_push('%erb%', ruby_code) if [RUBY_REOPEN_BLOCK, RUBY_OPEN_BLOCK].any? { |r| r === ruby_code }
       else
         p ERB_REST: erb_scanner.rest if @debug
         rest = erb_scanner.rest.to_s
