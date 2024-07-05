@@ -335,6 +335,7 @@ class ERB::Formatter
             keyword, rest = ruby_code.split(/\s+/, 2)
             ruby_code = format_ruby(rest, autoclose: false).sub(/^(\s*)/, "\\1#{keyword} " )
           end
+          ruby_code.gsub!(/^/, '  ') if ruby_code.strip.include?("\n")
         elsif block_type == :standalone || block_type == :other
           ruby_code = format_ruby(ruby_code, autoclose: false)
           ruby_code.gsub!(/^/, '  ') if ruby_code.strip.include?("\n")
