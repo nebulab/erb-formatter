@@ -26,16 +26,18 @@
 <p>Dein PEND Team</p>
 
 <%= form_with model: model, url: path, method: :patch do |f| %>
-  <%= f.select :type,
-           [
-             ["не выбрано", nil],
-             %w[Тип1 type1],
-             %w[Тип2 type2],
-             %w[Тип3 type3],
-             %w[Тип4 type4],
-             %w[Тип5 type5],
-           ],
-           {},
-           { class: "select" } %>
+  <%=
+    f.select :type,
+             [
+               ["не выбрано", nil],
+               %w[Тип1 type1],
+               %w[Тип2 type2],
+               %w[Тип3 type3],
+               %w[Тип4 type4],
+               %w[Тип5 type5],
+             ],
+             {},
+             { class: "select" }
+  %>
   <%= f.submit "Сохранить" %>
 <% end %>
