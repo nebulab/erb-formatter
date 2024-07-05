@@ -39,7 +39,7 @@ class ERB::Formatter
   ATTR = Regexp.union(SINGLE_QUOTE_ATTR, DOUBLE_QUOTE_ATTR, UNQUOTED_ATTR, UNQUOTED_VALUE)
   MULTILINE_ATTR_NAMES = %w[class data-action]
 
-  ERB_TAG = %r{(<%(?:==|=|-|))\s*(.*?)\s*(-?%>)}m
+  ERB_TAG = %r{(<%(?:=|-|#)*)(?:(?!\n)\s)*(.*?)\s*(-?%>)}m
   ERB_PLACEHOLDER = %r{erb[a-z0-9]+tag}
 
   TAG_NAME = /[a-z0-9_:-]+/
@@ -283,7 +283,6 @@ class ERB::Formatter
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
     code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join
-    code.strip! if lines.one?
     p RUBY_OUT: code if @debug
     code
   end
@@ -309,24 +308,39 @@ class ERB::Formatter
         format_text(erb_pre_match)
 
         erb_open, ruby_code, erb_close = ERB_TAG.match(erb_code).captures
-        erb_open << ' ' unless ruby_code.start_with?('#')
 
-        block_type = case ruby_code
-        when RUBY_STANDALONE_BLOCK then :standalone
-        when RUBY_CLOSE_BLOCK then :close
-        when RUBY_REOPEN_BLOCK then :reopen
-        when RUBY_OPEN_BLOCK then :open
-        else :other
-        end
+        block_type =
+          if erb_open.include?('#')
+            :comment
+          else
+            case ruby_code
+            when RUBY_STANDALONE_BLOCK then :standalone
+            when RUBY_CLOSE_BLOCK then :close
+            when RUBY_REOPEN_BLOCK then :reopen
+            when RUBY_OPEN_BLOCK then :open
+            else :other
+            end
+          end
 
+        # Format Ruby code, and indent if it's multiline
         if %i[standalone other].include? block_type
           ruby_code = format_ruby(ruby_code, autoclose: false)
+          ruby_code.gsub!(/^/, '  ') if ruby_code.strip.include?("\n")
         end
 
-        if ruby_code.include?("\n")
-          full_erb_tag = "#{erb_open}#{ruby_code.gsub(/^/, '  ')}#{indented(erb_close)}"
+        # Remove the first line if it only has whitespace
+        ruby_code.sub!(/\A((?!\n)\s)*\n/, '')
+
+        # Reset "common" indentation of multi-line comments
+        if block_type == :comment && ruby_code.strip.include?("\n")
+          # Leave comments intact, but if they're multiline, replace common indentation
+          ruby_code.gsub!(/^#{ruby_code.scan(/^ */).min_by(&:length)}/, '  ')
+        end
+
+        if ruby_code.strip.include?("\n")
+          full_erb_tag = "#{erb_open}\n#{ruby_code}#{indented(erb_close)}"
         else
-          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
+          full_erb_tag = "#{erb_open} #{ruby_code.strip} #{erb_close}"
         end
 
         tag_stack_pop('%erb%', ruby_code) if %i[close reopen].include? block_type
