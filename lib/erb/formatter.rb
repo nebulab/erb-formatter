@@ -323,10 +323,19 @@ class ERB::Formatter
           end
 
         # Format Ruby code, and indent if it's multiline
-        if block_type == :open && ruby_code.end_with?(" do") || ruby_code.end_with?("{")
-          suffix = ruby_code[-3..-1] == " do" ? " do" : "{"
-          ruby_code = "#{format_ruby(ruby_code.chomp(suffix), autoclose: false)}#{suffix}"
-        elsif %i[standalone other].include? block_type
+        if block_type == :open
+          # Block openers aren't complete ruby scripts, so syntax_tree won't like them.
+          # These are two workarounds to help make most of them valid, so we can format them anyway.
+          if ruby_code.end_with?(" do") || ruby_code.end_with?("{")
+            # If this is a block starter (ends w/ do or {), it may be valid statement without the ' do' or ' {' suffix
+            suffix = ruby_code[-3..-1] == " do" ? " do" : "{"
+            ruby_code = "#{format_ruby(ruby_code.chomp(suffix), autoclose: false)}#{suffix}"
+          elsif ruby_code.start_with?('if ', 'unless ', 'while ', 'until ')
+            # If this is a condition or loop, it may be a valid expression without first word
+            keyword, rest = ruby_code.split(/\s+/, 2)
+            ruby_code = format_ruby(rest, autoclose: false).sub(/^(\s*)/, "\\1#{keyword} " )
+          end
+        elsif block_type == :standalone || block_type == :other
           ruby_code = format_ruby(ruby_code, autoclose: false)
           ruby_code.gsub!(/^/, '  ') if ruby_code.strip.include?("\n")
         end
