@@ -308,6 +308,7 @@ class ERB::Formatter
         format_text(erb_pre_match)
 
         erb_open, ruby_code, erb_close = ERB_TAG.match(erb_code).captures
+        ruby_code.strip!
 
         block_type =
           if erb_open.include?('#')
