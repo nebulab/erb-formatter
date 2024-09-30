@@ -2,6 +2,6 @@
 class ERB::Formatter
   VERSION: String
 
-  def initialize: (String, line_width: ?Integer, filename: ?String) -> void
-  def self.format(String, filename: ?String) -> String
+  def initialize: (String, line_width: Integer?, filename: String?) -> void
+  def self.format: (String, filename: String?) -> String
 end
