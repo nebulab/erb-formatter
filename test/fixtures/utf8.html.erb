@@ -1,0 +1,19 @@
+<h3>Hi <%= @merchant.first_name %></h3>
+<h1>SOS! Deine PEND-Anbindung wurde SUSPENDIERT!</h1>
+<p>Die PEND-Anbindung von <%= @gateway.title %> auf deinem Shop <%= @shop.name %> wurde suspendiert!</p>
+
+<p class="warning">Aktuell kann in deinem Shop nicht mehr über <%= @gateway.title %> bezahlt werden!</p>
+
+<h2>Bitte beachte weitere E-Mails</h2>
+<p>Du erhältst weitere Informationen zu den Gründen und möglichen nächsten Schritten in einer separaten E-Mail.</p>
+
+<h2>Quick Fix?</h2>
+<p>Am einfachsten du aktualisiert deine hinterlegte Zahlungsart sofort. Unser System wird daraufhin automatisch eine Abbuchung versuchen. Sollte diese erfolgreich sein, wird die Suspendierung innert wenigen Sekunden rückgängig gemacht.</p>
+
+<p>Bei weiteren Fragen oder wenn du Unterstützung benötigst, sind wir natürlich für dich da.</p>
+<p>Dein PEND Team</p>
+
+<%= form_with model: model, url: path, method: :patch do |f| %>
+  <%= f.select :type, [["не выбрано", nil], %w[Тип1 type1], %w[Тип2 type2], %w[Тип3 type3], %w[Тип4 type4], %w[Тип5 type5]], {}, { class: "select" } %>
+  <%= f.submit "Сохранить" %>
+<% end %>

@@ -1,14 +1,15 @@
 # frozen_string_literal: false
 
 require 'pp'
-require "erb"
-require "ripper"
-require 'securerandom'
+require 'erb'
+require 'yaml'
 require 'strscan'
 require 'stringio'
+require 'securerandom'
 require 'erb/formatter/version'
 
 require 'syntax_tree'
+require 'syntax_tree/plugin/trailing_comma'
 
 class ERB::Formatter
   module SyntaxTreeCommandPatch
@@ -25,9 +26,11 @@ class ERB::Formatter
 
   class Error < StandardError; end
 
+  SPACES = /\s+/m
+
   # https://stackoverflow.com/a/317081
   ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
-  UNQUOTED_VALUE = ATTR_NAME
+  UNQUOTED_VALUE = %r{[^<>'"\s]+}
   UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}
   SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}m
   DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*?")}m
@@ -47,21 +50,22 @@ class ERB::Formatter
 
   SELF_CLOSING_TAG = /\A(area|base|br|col|command|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)\z/i
 
-  RUBY_OPEN_BLOCK = ->(code) do
-    # is nil when the parsing is broken, meaning it's an open expression
-    Ripper.sexp(code).nil?
-  end.freeze
+  begin
+    require 'prism' # ruby 3.3
+    RUBY_OPEN_BLOCK = Prism.method(:parse_failure?)
+  rescue LoadError
+    require 'ripper'
+    RUBY_OPEN_BLOCK = ->(code) do
+      # is nil when the parsing is broken, meaning it's an open expression
+      Ripper.sexp(code).nil?
+    end.freeze
+  end
+
+  RUBY_STANDALONE_BLOCK = /\A(yield|next)\b/
   RUBY_CLOSE_BLOCK = /\Aend\z/
   RUBY_REOPEN_BLOCK = /\A(else|elsif\b(.*)|when\b(.*))\z/
 
   RUBOCOP_STDIN_MARKER = "===================="
-
-  # Override the max line length to account from already indented ERB
-  module RubocopForcedMaxLineLength
-    def max
-      Thread.current['RuboCop::Cop::Layout::LineLength#max'] || super
-    end
-  end
 
   module DebugShovel
     def <<(string)
@@ -74,13 +78,15 @@ class ERB::Formatter
     new(source, filename: filename).html
   end
 
-  def initialize(source, line_width: 80, filename: nil, debug: $DEBUG)
+  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, debug: $DEBUG)
     @original_source = source
     @filename = filename || '(erb)'
     @line_width = line_width
     @source = remove_front_matter source.dup
     @html = +""
     @debug = debug
+    @single_class_per_line = single_class_per_line
+    @css_class_sorter = css_class_sorter
 
     html.extend DebugShovel if @debug
 
@@ -104,10 +110,13 @@ class ERB::Formatter
   end
 
   def remove_front_matter(source)
-    source.sub(/\A---\n[\s\S]*?\n---\n/) do |match|
-      @front_matter = match
-      match.gsub(/[^\n]/, ' ')
-    end
+    return source unless source.start_with?("---\n")
+
+    first_body_line = YAML.parse(source).children.first.end_line + 1
+    lines = source.lines
+
+    @front_matter = lines[0...first_body_line].join
+    lines[first_body_line..].join
   end
 
   attr_accessor \
@@ -120,29 +129,63 @@ class ERB::Formatter
     return "" if attrs.strip.empty?
 
     plain_attrs = attrs.tr("\n", " ").squeeze(" ").gsub(erb_tags_regexp, erb_tags)
-    return " #{plain_attrs}" if "<#{tag_name} #{plain_attrs}#{tag_closing}".size <= line_width
+    within_line_width = "<#{tag_name} #{plain_attrs}#{tag_closing}".size <= line_width
+
+    return " #{plain_attrs}" if within_line_width && !@css_class_sorter && !plain_attrs.match?(/ class=/)
 
     attr_html = ""
     tag_stack_push(['attr='], attrs)
+
     attrs.scan(ATTR).flatten.each do |attr|
       attr.strip!
-      full_attr = indented(attr)
       name, value = attr.split('=', 2)
+
+      if value.nil?
+        attr_html << indented("#{name}")
+        next
+      end
+
+      if /\A#{UNQUOTED_VALUE}\z/o.match?(value)
+        attr_html << indented("#{name}=\"#{value}\"")
+        next
+      end
+
+      value_parts = value[1...-1].strip.split(SPACES)
+      value_parts.sort_by!(&@css_class_sorter) if name == 'class' && @css_class_sorter
+
+      full_attr = "#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}"
+      full_attr = within_line_width ? " #{full_attr}" : indented(full_attr)
 
       if full_attr.size > line_width && MULTILINE_ATTR_NAMES.include?(name) && attr.match?(QUOTED_ATTR)
         attr_html << indented("#{name}=#{value[0]}")
         tag_stack_push('attr"', value)
-        value[1...-1].strip.split(/\s+/).each do |value_part|
-          attr_html << indented(value_part)
+
+        if !@single_class_per_line && name == 'class'
+          line = value_parts.shift
+          value_parts.each do |value_part|
+            if (line.size + value_part.size + 1) <= line_width
+              line << " #{value_part}"
+            else
+              attr_html << indented(line)
+              line = value_part
+            end
+          end
+          attr_html << indented(line) if line
+        else
+          value_parts.each do |value_part|
+            attr_html << indented(value_part)
+          end
         end
+
         tag_stack_pop('attr"', value)
-        attr_html << indented(value[-1])
+        attr_html << (within_line_width ? value[-1] : indented(value[-1]))
       else
         attr_html << full_attr
       end
     end
+
     tag_stack_pop(['attr='], attrs)
-    attr_html << indented("")
+    attr_html << indented("") unless within_line_width
     attr_html
   end
 
@@ -192,7 +235,7 @@ class ERB::Formatter
 
     return if text.match?(/\A\s*\z/m) # empty
 
-    text = text.gsub(/\s+/m, ' ').strip
+    text = text.gsub(SPACES, ' ').strip
 
     offset = indented("").size
     # Restore full line width if there are less than 40 columns available
@@ -264,6 +307,10 @@ class ERB::Formatter
         erb_open << ' ' unless ruby_code.start_with?('#')
 
         case ruby_code
+        when RUBY_STANDALONE_BLOCK
+          ruby_code = format_ruby(ruby_code, autoclose: false)
+          full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
+          html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
         when RUBY_CLOSE_BLOCK
           full_erb_tag = "#{erb_open}#{ruby_code} #{erb_close}"
           tag_stack_pop('%erb%', ruby_code)

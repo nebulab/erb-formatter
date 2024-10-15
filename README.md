@@ -109,11 +109,44 @@ cd "$TM_PROJECT_DIRECTORY"
 bundle exec erb-format --stdin-filename "$TM_FILEPATH" < /dev/stdin 2> /dev/stdout
 ```
 
+### With [(Neo)VIM ALE](https://github.com/dense-analysis/ale)
+
+Enable `erb-formatter` as a fixer in the ALE config:
+
+```vim
+let g:ale_fixers = {
+\   'eruby': ['erb-formatter'],
+\}
+```
+
+### With [Zed](https://zed.dev/) editor
+
+With the gem installed, configure `settings.json` to use the formatter as an external command
+
+```json
+"language_overrides": {
+  "ERB": {
+    "formatter": {
+      "external": {
+        "command": "erb-format",
+        "arguments": ["--stdin", "--print-width", "80"]
+      }
+    }
+  }
+}
+```
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+In order to run a specific test, use the following command:
+
+```bash
+m test/erb/test_formatter.rb:123
+```
 
 ## Contributing
 

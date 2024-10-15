@@ -3,6 +3,19 @@ require 'erb/formatter'
 require 'optparse'
 
 class ERB::Formatter::CommandLine
+  def self.tailwindcss_class_sorter(css_path)
+    css = File.read(css_path)
+
+    css = css.tr("\n", " ").gsub(%r{\/\*.*?\*\/},"") # remove comments
+    css = css.gsub(%r<@media.*?\{>, "") # strip media queries
+    css = css.scan(%r<(?:^|\}|\{) *(\S.*?) *\{>).join(" ") # extract selectors
+    classes = css.tr(","," ").split(" ").grep(/\./).uniq.map { _1.split('.').last.gsub("\\", "") }
+    indexed_classes = Hash[classes.zip((0...classes.size).to_a)]
+
+    ->(class_name) do
+      indexed_classes[class_name] || classes.index { _1.start_with?(class_name) } || -1
+    end
+  end
 
   attr_reader :write, :filename, :read_stdin
 
@@ -10,7 +23,7 @@ class ERB::Formatter::CommandLine
     @argv = argv.dup
     @stdin = stdin
 
-    @write, @filename, @read_stdin, @code = nil
+    @write, @filename, @read_stdin, @code, @single_class_per_line = nil
 
     OptionParser.new do |parser|
       parser.banner = "Usage: #{$0} FILENAME... --write"
@@ -37,8 +50,20 @@ class ERB::Formatter::CommandLine
         @width = value
       end
 
+      parser.on("--single-class-per-line", "Print each class on a separate line") do |value|
+        @single_class_per_line = value
+      end
+
+      parser.on("--tailwind-output-path PATH", "Set the path to the tailwind output file") do |value|
+        @tailwind_output_path = value
+      end
+
       parser.on("--[no-]debug", "Enable debug mode") do |value|
         $DEBUG = value
+      end
+
+      parser.on("--fail-level LEVEL", "'check' exits(1) on any formatting changes)") do |value|
+        @fail_level = value
       end
 
       parser.on("-h", "--help", "Prints this help") do
@@ -57,10 +82,6 @@ class ERB::Formatter::CommandLine
     @ignore_list ||= ERB::Formatter::IgnoreList.new
   end
 
-  def ignore?(filename)
-
-  end
-
   def run
     if read_stdin
       abort "Can't read both stdin and a list of files" unless @argv.empty?
@@ -73,11 +94,25 @@ class ERB::Formatter::CommandLine
       end
     end
 
+    if @tailwind_output_path
+      css_class_sorter = self.class.tailwindcss_class_sorter(@tailwind_output_path)
+    end
+
+    files_changed = false
+
     files.each do |(filename, code)|
       if ignore_list.should_ignore_file? filename
         print code unless write
       else
-        html = ERB::Formatter.new(code, filename: filename, line_width: @width || 80)
+        html = ERB::Formatter.new(
+          code,
+          filename: filename,
+          line_width: @width || 80,
+          single_class_per_line: @single_class_per_line,
+          css_class_sorter: css_class_sorter
+        )
+
+        files_changed = true if html.to_s != code
 
         if write
           File.write(filename, html)
@@ -86,5 +121,6 @@ class ERB::Formatter::CommandLine
         end
       end
     end
+    exit(1) if files_changed && @fail_level == "check"
   end
 end

@@ -16,8 +16,29 @@ class ERB::TestFormatter < Minitest::Test
       expected_path = erb_path.chomp('.erb') + '.expected.erb'
 
       # File.write expected_path, ERB::Formatter.format(File.read(erb_path))
-      assert_equal(File.read(expected_path), ERB::Formatter.format(File.read(erb_path)), "Formatting of #{erb_path} failed")
+      assert_equal(File.read(expected_path), ERB::Formatter.new(File.read(erb_path)).to_s, "Formatting of #{erb_path} failed")
     end
+  end
+
+  def test_error_on_unformattable_file
+    cli = ERB::Formatter::CommandLine.new(["test/fixtures/unmatched_error.erb"])
+    error = assert_raises RuntimeError do |error|
+      cli.run
+    end
+    assert_match(/Unmatched close tag/, error.message)
+  end
+
+  def test_fail_level_flag_check_with_changes
+    cli = ERB::Formatter::CommandLine.new(["--fail-level", "check", "test/fixtures/attributes.html.erb"])
+    error = assert_raises SystemExit do
+      assert_output(/src="image.jpg"/) { cli.run }
+    end
+    assert_equal(1, error.status)
+  end
+
+  def test_fail_level_flag_check_without_changes
+    cli = ERB::Formatter::CommandLine.new(["--fail-level", "check", "test/fixtures/attributes.html.expected.erb"])
+    assert_output(/src="image.jpg"/) { cli.run }
   end
 
   def test_format_text_with_extra_long_text
@@ -128,7 +149,7 @@ class ERB::TestFormatter < Minitest::Test
       "<div>\n" \
       "  <%= render MyComponent.new(\n" \
       "    foo: barbarbarbarbarbarbarbar,\n" \
-      "    bar: bazbazbazbazbazbazbazbaz\n" \
+      "    bar: bazbazbazbazbazbazbazbaz,\n" \
       "  ) %>\n" \
       "</div>\n",
       ERB::Formatter.format("<div> <%=render MyComponent.new(foo:barbarbarbarbarbarbarbar,bar:bazbazbazbazbazbazbazbaz)%> </div>"),
@@ -153,6 +174,31 @@ class ERB::TestFormatter < Minitest::Test
         %{defer: true %>\n} +
         %{<%- hotwire_livereload_tags if Rails.env .development? %>\n},
         line_width: 120,
+      ).to_s,
+    )
+  end
+
+  def test_tailwindcss_class_sorting
+    require 'tailwindcss-rails'
+    require 'erb/formatter/command_line'
+
+    error_log = "#{__dir__}/../../tmp/tailwindcss.err.log"
+    Dir.mkdir(File.dirname(error_log)) unless File.exist?(File.dirname(error_log))
+
+    system(
+      Tailwindcss::Commands.executable,
+      "--content", "#{__dir__}/../fixtures/tailwindcss/class_sorting.html.erb",
+      "--output", "#{__dir__}/../fixtures/tailwindcss/class_sorting.css",
+      err: error_log,
+    ) || raise("Failed to generate tailwindcss output:\n#{File.read(error_log)}")
+
+    css_class_sorter = ERB::Formatter::CommandLine.tailwindcss_class_sorter("#{__dir__}/../fixtures/tailwindcss/class_sorting.css")
+
+    assert_equal(
+      File.read("#{__dir__}/../fixtures/tailwindcss/class_sorting.html.expected.erb"),
+      ERB::Formatter.new(
+        File.read("#{__dir__}/../fixtures/tailwindcss/class_sorting.html.erb"),
+        css_class_sorter: css_class_sorter,
       ).to_s,
     )
   end
