@@ -9,7 +9,7 @@ class ERB::Formatter::CommandLine
     css = css.tr("\n", " ").gsub(%r{\/\*.*?\*\/},"") # remove comments
     css = css.gsub(%r<@media.*?\{>, "") # strip media queries
     css = css.scan(%r<(?:^|\}|\{) *(\S.*?) *\{>).join(" ") # extract selectors
-    classes = css.tr(","," ").split(" ").grep(/\./).uniq.map { _1.split('.').last.gsub("\\", "") }
+    classes = css.tr(","," ").split(" ").grep(/\./).uniq.map { _1.split('.').last.gsub("\\3", "").gsub("\\", "") }
     indexed_classes = Hash[classes.zip((0...classes.size).to_a)]
 
     ->(class_name) do
