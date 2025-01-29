@@ -146,12 +146,16 @@ class ERB::TestFormatter < Minitest::Test
 
   def test_format_ruby
     assert_equal(
-      "<div>\n" \
-      "  <%= render MyComponent.new(\n" \
-      "    foo: barbarbarbarbarbarbarbar,\n" \
-      "    bar: bazbazbazbazbazbazbazbaz,\n" \
-      "  ) %>\n" \
-      "</div>\n",
+      <<~ERB,
+        <div>
+          <%=
+            render MyComponent.new(
+              foo: barbarbarbarbarbarbarbar,
+              bar: bazbazbazbazbazbazbazbaz,
+            )
+          %>
+        </div>
+      ERB
       ERB::Formatter.format("<div> <%=render MyComponent.new(foo:barbarbarbarbarbarbarbar,bar:bazbazbazbazbazbazbazbaz)%> </div>"),
     )
   end
