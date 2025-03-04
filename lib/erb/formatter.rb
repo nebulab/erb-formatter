@@ -271,9 +271,9 @@ class ERB::Formatter
 
     code = begin
       # TODO: For single-lines, 7 should be subtracted instead of 2: 3 for opening, 2 for closing and 2 surrounding spaces
-      # Subtract 2 for multiline indentation or for the surrounding tags
+      # Subtract 4 for multiline indentation or for the surrounding tags
       # Then subtract twice the tag_stack size to respect indentation
-      width = @line_width - 2 - tag_stack.size * 2
+      width = @line_width - 4 - tag_stack.size * 2
       SyntaxTree.format(code, width)
     rescue SyntaxTree::Parser::ParseError => error
       p RUBY_PARSE_ERROR: error if @debug
@@ -282,7 +282,7 @@ class ERB::Formatter
 
     lines = code.strip.lines
     lines = lines[0...-1] if autoclose
-    code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join
+    code = lines.map { |l| indented("  #{l.chomp("\n")}", strip: false) }.join
     p RUBY_OUT: code if @debug
     code
   end
@@ -352,11 +352,7 @@ class ERB::Formatter
           ruby_code.gsub!(/^#{ruby_code.scan(/^ */).min_by(&:length)}/, '  ')
         end
 
-        if ruby_code.strip.include?("\n")
-          full_erb_tag = "#{erb_open}\n#{ruby_code}#{indented(erb_close)}"
-        else
-          full_erb_tag = "#{erb_open} #{ruby_code.strip} #{erb_close}"
-        end
+        full_erb_tag = "#{erb_open} #{ruby_code.strip} #{erb_close}"
 
         tag_stack_pop('%erb%', ruby_code) if %i[close reopen].include? block_type
         html << (erb_pre_match.match?(/\s+\z/) ? indented(full_erb_tag) : full_erb_tag)
