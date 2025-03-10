@@ -246,4 +246,25 @@ class ERB::TestFormatter < Minitest::Test
     assert_includes formatted_without_tags, 'class="p-4 pt-2"'
     assert_includes formatted_without_tags, 'class="border-gray-300 p-3 shadow-md text-gray-700"'
   end
+
+  def test_ruby_helper_class_sorting
+    input = <<~ERB
+      <%= link_to "test", path, class: 'px-4 lg:p-8 flex sm:p-2' %>
+      <%= button_tag "Submit", class: "hover:bg-gray-100 bg-white flex" %>
+      <%= content_tag :div, class='sm:grid lg:grid grid-cols-2' do %>
+        Content
+      <% end %>
+    ERB
+
+    expected = <<~ERB
+      <%= link_to "test", path, class: "flex px-4 sm:p-2 lg:p-8" %>
+      <%= button_tag "Submit", class: "flex bg-white hover:bg-gray-100" %>
+      <%= content_tag :div, class: "grid-cols-2 sm:grid lg:grid" do %>
+        Content
+      <% end %>
+    ERB
+
+    formatted = ERB::Formatter.new(input, css_class_sorter: true).to_s
+    assert_equal expected, formatted
+  end
 end
