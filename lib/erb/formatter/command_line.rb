@@ -3,16 +3,6 @@ require "optparse"
 require "tailwind_sorter"
 
 class ERB::Formatter::CommandLine
-  def self.tailwindcss_class_sorter(css_path)
-    ->(class_name) do
-      # Create an array of classes to sort with just this single class
-      sorted = TailwindSorter.sort([class_name])
-      # Return the index (0 since there's only one class)
-      # or -1 if the class wasn't recognized/sortable
-      sorted.include?(class_name) ? 0 : -1
-    end
-  end
-
   attr_reader :write, :filename, :read_stdin
 
   def initialize(argv, stdin: $stdin)
@@ -98,10 +88,7 @@ class ERB::Formatter::CommandLine
       files = @argv.map { |filename| [filename, File.read(filename)] }
     end
 
-    if @tailwind_output_path
-      css_class_sorter =
-        self.class.tailwindcss_class_sorter(@tailwind_output_path)
-    end
+    css_class_sorter = true if @tailwind_output_path
 
     files_changed = false
 

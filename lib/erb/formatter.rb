@@ -154,7 +154,7 @@ class ERB::Formatter
       end
 
       value_parts = value[1...-1].strip.split(SPACES)
-      value_parts.sort_by!(&@css_class_sorter) if name == 'class' && @css_class_sorter
+      value_parts = [TailwindSorter.sort(value_parts.join(" "))] if name == 'class' && @css_class_sorter
 
       full_attr = "#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}"
       full_attr = within_line_width ? " #{full_attr}" : indented(full_attr)
