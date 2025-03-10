@@ -202,4 +202,48 @@ class ERB::TestFormatter < Minitest::Test
       ).to_s,
     )
   end
+
+  def test_format_tags_disabled_with_class_sorting
+    input = <<~HTML
+      <div class="pt-2 p-4">
+        <span class="text-gray-700 shadow-md p-3 border-gray-300">
+          Some text
+        </span>
+      </div>
+    HTML
+
+    # With format_tags enabled (default)
+    formatted_with_tags = ERB::Formatter.new(
+      input,
+      css_class_sorter: true,
+      format_tags: true
+    ).to_s
+
+    assert_equal <<~HTML, formatted_with_tags
+      <div class="p-4 pt-2">
+        <span class="border-gray-300 p-3 shadow-md text-gray-700">
+          Some text
+        </span>
+      </div>
+    HTML
+
+    # With format_tags disabled
+    formatted_without_tags = ERB::Formatter.new(
+      input,
+      css_class_sorter: true,
+      format_tags: false
+    ).to_s
+
+    assert_equal <<~HTML, formatted_without_tags
+      <div class="p-4 pt-2">
+        <span class="border-gray-300 p-3 shadow-md text-gray-700">
+          Some text
+        </span>
+      </div>
+    HTML
+
+    # Verify that class sorting still works but spacing remains unchanged
+    assert_includes formatted_without_tags, 'class="p-4 pt-2"'
+    assert_includes formatted_without_tags, 'class="border-gray-300 p-3 shadow-md text-gray-700"'
+  end
 end

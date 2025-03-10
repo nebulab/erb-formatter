@@ -78,7 +78,7 @@ class ERB::Formatter
     new(source, filename: filename).html
   end
 
-  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, debug: $DEBUG)
+  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, format_tags: true, debug: $DEBUG)
     @original_source = source.to_s
     @original_source = +@original_source if @original_source.frozen?
     @original_source.force_encoding('UTF-8')
@@ -90,6 +90,7 @@ class ERB::Formatter
     @debug = debug
     @single_class_per_line = single_class_per_line
     @css_class_sorter = css_class_sorter
+    @format_tags = format_tags
 
     html.extend DebugShovel if @debug
 
@@ -132,6 +133,25 @@ class ERB::Formatter
     return "" if attrs.strip.empty?
 
     plain_attrs = attrs.tr("\n", " ").squeeze(" ").gsub(erb_tags_regexp, erb_tags)
+
+    if @css_class_sorter && plain_attrs.match?(/class/)
+      # Handle class sorting even when format_tags is false
+      attr_list = plain_attrs.scan(ATTR).flatten
+      attr_list.map! do |attr|
+        name, value = attr.split('=', 2)
+        if name == 'class' && value
+          value_parts = value[1...-1].strip.split(SPACES)
+          sorted_classes = TailwindSorter.sort(value_parts.join(" "))
+          "#{name}=#{value[0]}#{sorted_classes}#{value[-1]}"
+        else
+          attr
+        end
+      end
+      return " #{attr_list.join(' ')}" unless @format_tags
+    end
+
+    return " #{plain_attrs}" unless @format_tags
+
     within_line_width = "<#{tag_name} #{plain_attrs}#{tag_closing}".size <= line_width
 
     return " #{plain_attrs}" if within_line_width && !@css_class_sorter && !plain_attrs.match?(/ class=/)
@@ -222,6 +242,7 @@ class ERB::Formatter
   end
 
   def indented(string, strip: true)
+    return string unless @format_tags
     string = string.strip if strip
     indent = "  " * tag_stack.size
     "\n#{indent}#{string}"
@@ -230,6 +251,11 @@ class ERB::Formatter
   def format_text(text)
     p format_text: text if @debug
     return unless text
+
+    if !@format_tags
+      html << text
+      return
+    end
 
     starting_space = text.match?(/\A\s/)
 
@@ -290,6 +316,11 @@ class ERB::Formatter
     p format_erb_tags: string if @debug
     if %w[style script].include?(tag_stack.last&.first)
       html << string.rstrip
+      return
+    end
+
+    if !@format_tags
+      html << string
       return
     end
 

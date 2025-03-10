@@ -9,7 +9,8 @@ class ERB::Formatter::CommandLine
     @argv = argv.dup
     @stdin = stdin
 
-    @write, @filename, @read_stdin, @code, @single_class_per_line = nil
+    @write, @filename, @read_stdin, @code, @single_class_per_line, @format_tags = nil
+    @format_tags = true # Default to true for backward compatibility
 
     OptionParser
       .new do |parser|
@@ -44,6 +45,11 @@ class ERB::Formatter::CommandLine
           "--single-class-per-line",
           "Print each class on a separate line"
         ) { |value| @single_class_per_line = value }
+
+        parser.on(
+          "--[no-]format-tags",
+          "Enable/disable HTML tag formatting (spacing/indenting)"
+        ) { |value| @format_tags = value }
 
         parser.on(
           "--tailwind-output-path PATH",
@@ -102,7 +108,8 @@ class ERB::Formatter::CommandLine
             filename: filename,
             line_width: @width || 80,
             single_class_per_line: @single_class_per_line,
-            css_class_sorter: css_class_sorter
+            css_class_sorter: css_class_sorter,
+            format_tags: @format_tags
           )
 
         files_changed = true if html.to_s != code
