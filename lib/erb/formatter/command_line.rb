@@ -1,19 +1,15 @@
-
-require 'erb/formatter'
-require 'optparse'
+require "erb/formatter"
+require "optparse"
+require "tailwind_sorter"
 
 class ERB::Formatter::CommandLine
   def self.tailwindcss_class_sorter(css_path)
-    css = File.read(css_path)
-
-    css = css.tr("\n", " ").gsub(%r{\/\*.*?\*\/},"") # remove comments
-    css = css.gsub(%r<@media.*?\{>, "") # strip media queries
-    css = css.scan(%r<(?:^|\}|\{) *(\S.*?) *\{>).join(" ") # extract selectors
-    classes = css.tr(","," ").split(" ").grep(/\./).uniq.map { _1.split('.').last.gsub("\\", "") }
-    indexed_classes = Hash[classes.zip((0...classes.size).to_a)]
-
     ->(class_name) do
-      indexed_classes[class_name] || classes.index { _1.start_with?(class_name) } || -1
+      # Create an array of classes to sort with just this single class
+      sorted = TailwindSorter.sort([class_name])
+      # Return the index (0 since there's only one class)
+      # or -1 if the class wasn't recognized/sortable
+      sorted.include?(class_name) ? 0 : -1
     end
   end
 
@@ -25,57 +21,69 @@ class ERB::Formatter::CommandLine
 
     @write, @filename, @read_stdin, @code, @single_class_per_line = nil
 
-    OptionParser.new do |parser|
-      parser.banner = "Usage: #{$0} FILENAME... --write"
+    OptionParser
+      .new do |parser|
+        parser.banner = "Usage: #{$0} FILENAME... --write"
 
-      parser.on("-w", "--[no-]write", "Write file") do |value|
-        @write = value
-      end
+        parser.on("-w", "--[no-]write", "Write file") { |value| @write = value }
 
-      parser.on("--stdin-filename FILEPATH", "Set the stdin filename (implies --stdin)") do |value|
-        @filename = value
-        @read_stdin = true
-      end
-
-      parser.on("--[no-]stdin", "Read the file from stdin") do |value|
-        if read_stdin == true && value == false
-          abort "Can't set stdin filename and not use stdin at the same time"
+        parser.on(
+          "--stdin-filename FILEPATH",
+          "Set the stdin filename (implies --stdin)"
+        ) do |value|
+          @filename = value
+          @read_stdin = true
         end
 
-        @read_stdin = value
-        @filename ||= '-'
-      end
+        parser.on("--[no-]stdin", "Read the file from stdin") do |value|
+          if read_stdin == true && value == false
+            abort "Can't set stdin filename and not use stdin at the same time"
+          end
 
-      parser.on("--print-width WIDTH", Integer, "Set the formatted output width") do |value|
-        @width = value
-      end
+          @read_stdin = value
+          @filename ||= "-"
+        end
 
-      parser.on("--single-class-per-line", "Print each class on a separate line") do |value|
-        @single_class_per_line = value
-      end
+        parser.on(
+          "--print-width WIDTH",
+          Integer,
+          "Set the formatted output width"
+        ) { |value| @width = value }
 
-      parser.on("--tailwind-output-path PATH", "Set the path to the tailwind output file") do |value|
-        @tailwind_output_path = value
-      end
+        parser.on(
+          "--single-class-per-line",
+          "Print each class on a separate line"
+        ) { |value| @single_class_per_line = value }
 
-      parser.on("--[no-]debug", "Enable debug mode") do |value|
-        $DEBUG = value
-      end
+        parser.on(
+          "--tailwind-output-path PATH",
+          "Set the path to the tailwind output file"
+        ) { |value| @tailwind_output_path = value }
 
-      parser.on("--fail-level LEVEL", "'check' exits(1) on any formatting changes)") do |value|
-        @fail_level = value
-      end
+        parser.on("--[no-]debug", "Enable debug mode") do |value|
+          $DEBUG = value
+        end
 
-      parser.on("-h", "--help", "Prints this help") do
-        puts parser
-        exit
-      end
+        parser.on(
+          "--fail-level LEVEL",
+          "'check' exits(1) on any formatting changes)"
+        ) { |value| @fail_level = value }
 
-      parser.on("-v", "--version", "Show ERB::Formatter version number and quit") do
-        puts "ERB::Formatter #{ERB::Formatter::VERSION}"
-        exit
+        parser.on("-h", "--help", "Prints this help") do
+          puts parser
+          exit
+        end
+
+        parser.on(
+          "-v",
+          "--version",
+          "Show ERB::Formatter version number and quit"
+        ) do
+          puts "ERB::Formatter #{ERB::Formatter::VERSION}"
+          exit
+        end
       end
-    end.parse!(@argv)
+      .parse!(@argv)
   end
 
   def ignore_list
@@ -85,17 +93,14 @@ class ERB::Formatter::CommandLine
   def run
     if read_stdin
       abort "Can't read both stdin and a list of files" unless @argv.empty?
-      files = [
-        [@filename, @stdin.read]
-      ]
+      files = [[@filename, @stdin.read]]
     else
-      files = @argv.map do |filename|
-        [filename, File.read(filename)]
-      end
+      files = @argv.map { |filename| [filename, File.read(filename)] }
     end
 
     if @tailwind_output_path
-      css_class_sorter = self.class.tailwindcss_class_sorter(@tailwind_output_path)
+      css_class_sorter =
+        self.class.tailwindcss_class_sorter(@tailwind_output_path)
     end
 
     files_changed = false
@@ -104,13 +109,14 @@ class ERB::Formatter::CommandLine
       if ignore_list.should_ignore_file? filename
         print code unless write
       else
-        html = ERB::Formatter.new(
-          code,
-          filename: filename,
-          line_width: @width || 80,
-          single_class_per_line: @single_class_per_line,
-          css_class_sorter: css_class_sorter
-        )
+        html =
+          ERB::Formatter.new(
+            code,
+            filename: filename,
+            line_width: @width || 80,
+            single_class_per_line: @single_class_per_line,
+            css_class_sorter: css_class_sorter
+          )
 
         files_changed = true if html.to_s != code
 
