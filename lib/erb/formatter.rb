@@ -29,12 +29,12 @@ class ERB::Formatter
   SPACES = /\s+/m
 
   # https://stackoverflow.com/a/317081
-  ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
-  UNQUOTED_VALUE = %r{[^<>'"\s]+}
-  UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}
-  SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}m
-  DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*?")}m
-  BAD_ATTR = %r{#{ATTR_NAME}=\s+}
+  ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]}u # not ending with a slash
+  UNQUOTED_VALUE = %r{[^<>'"\s]+}u
+  UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}u
+  SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}mu
+  DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*?")}mu
+  BAD_ATTR = %r{#{ATTR_NAME}=\s+}u
   QUOTED_ATTR = Regexp.union(SINGLE_QUOTE_ATTR, DOUBLE_QUOTE_ATTR)
   ATTR = Regexp.union(SINGLE_QUOTE_ATTR, DOUBLE_QUOTE_ATTR, UNQUOTED_ATTR, UNQUOTED_VALUE)
   MULTILINE_ATTR_NAMES = %w[class data-action]
@@ -42,7 +42,7 @@ class ERB::Formatter
   ERB_TAG = %r{(<%(?:==|=|-|))\s*(.*?)\s*(-?%>)}m
   ERB_PLACEHOLDER = %r{erb[a-z0-9]+tag}
 
-  TAG_NAME = /[a-z0-9_:-]+/
+  TAG_NAME = /[a-z0-9_:-]+/u
   TAG_NAME_ONLY = /\A#{TAG_NAME}\z/
   HTML_ATTR = %r{\s+#{SINGLE_QUOTE_ATTR}|\s+#{DOUBLE_QUOTE_ATTR}|\s+#{UNQUOTED_ATTR}|\s+#{ATTR_NAME}}m
   HTML_TAG_OPEN = %r{<(#{TAG_NAME})((?:#{HTML_ATTR})*)(\s*?)(/>|>)}m
@@ -78,15 +78,19 @@ class ERB::Formatter
     new(source, filename: filename).html
   end
 
-  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, debug: $DEBUG)
-    @original_source = source
+  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, format_tags: true, debug: $DEBUG)
+    @original_source = source.to_s
+    @original_source = +@original_source if @original_source.frozen?
+    @original_source.force_encoding('UTF-8')
+
     @filename = filename || '(erb)'
     @line_width = line_width
-    @source = remove_front_matter source.dup
-    @html = +""
+    @source = remove_front_matter @original_source.dup
+    @html = +"".force_encoding('UTF-8')
     @debug = debug
     @single_class_per_line = single_class_per_line
     @css_class_sorter = css_class_sorter
+    @format_tags = format_tags
 
     html.extend DebugShovel if @debug
 
@@ -129,6 +133,25 @@ class ERB::Formatter
     return "" if attrs.strip.empty?
 
     plain_attrs = attrs.tr("\n", " ").squeeze(" ").gsub(erb_tags_regexp, erb_tags)
+
+    if @css_class_sorter && plain_attrs.match?(/class/)
+      # Handle class sorting even when format_tags is false
+      attr_list = plain_attrs.scan(ATTR).flatten
+      attr_list.map! do |attr|
+        name, value = attr.split('=', 2)
+        if name == 'class' && value
+          value_parts = value[1...-1].strip.split(SPACES)
+          sorted_classes = TailwindSorter.sort(value_parts.join(" "))
+          "#{name}=#{value[0]}#{sorted_classes}#{value[-1]}"
+        else
+          attr
+        end
+      end
+      return " #{attr_list.join(' ')}" unless @format_tags
+    end
+
+    return " #{plain_attrs}" unless @format_tags
+
     within_line_width = "<#{tag_name} #{plain_attrs}#{tag_closing}".size <= line_width
 
     return " #{plain_attrs}" if within_line_width && !@css_class_sorter && !plain_attrs.match?(/ class=/)
@@ -151,7 +174,7 @@ class ERB::Formatter
       end
 
       value_parts = value[1...-1].strip.split(SPACES)
-      value_parts.sort_by!(&@css_class_sorter) if name == 'class' && @css_class_sorter
+      value_parts = [TailwindSorter.sort(value_parts.join(" "))] if name == 'class' && @css_class_sorter
 
       full_attr = "#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}"
       full_attr = within_line_width ? " #{full_attr}" : indented(full_attr)
@@ -219,6 +242,7 @@ class ERB::Formatter
   end
 
   def indented(string, strip: true)
+    return string unless @format_tags
     string = string.strip if strip
     indent = "  " * tag_stack.size
     "\n#{indent}#{string}"
@@ -227,6 +251,11 @@ class ERB::Formatter
   def format_text(text)
     p format_text: text if @debug
     return unless text
+
+    if !@format_tags
+      html << text
+      return
+    end
 
     starting_space = text.match?(/\A\s/)
 
@@ -267,18 +296,22 @@ class ERB::Formatter
     end
     p RUBY_IN_: code if @debug
 
-    SyntaxTree::Command.prepend SyntaxTreeCommandPatch
+    # Only apply Ruby formatting if format_tags is true
+    if @format_tags
+      SyntaxTree::Command.prepend SyntaxTreeCommandPatch
 
-    code = begin
-      SyntaxTree.format(code, @line_width)
-    rescue SyntaxTree::Parser::ParseError => error
-      p RUBY_PARSE_ERROR: error if @debug
-      code
+      code = begin
+        SyntaxTree.format(code, @line_width)
+      rescue SyntaxTree::Parser::ParseError => error
+        p RUBY_PARSE_ERROR: error if @debug
+        code
+      end
+
+      lines = code.strip.lines
+      lines = lines[0...-1] if autoclose
+      code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join.strip
     end
 
-    lines = code.strip.lines
-    lines = lines[0...-1] if autoclose
-    code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join.strip
     p RUBY_OUT: code if @debug
     code
   end
@@ -294,17 +327,50 @@ class ERB::Formatter
     erb_pre_pos = 0
     until erb_scanner.eos?
       if erb_scanner.scan_until(erb_tags_regexp)
-        p PRE_MATCH: [erb_pre_pos, '..', erb_scanner.pre_match] if @debug
         erb_pre_match = erb_scanner.pre_match
         erb_pre_match = erb_pre_match[erb_pre_pos..].to_s
         erb_pre_pos = erb_scanner.pos
 
         erb_code = erb_tags[erb_scanner.captures.first]
 
-        format_text(erb_pre_match)
+        # When format_tags is false, just append the text directly
+        if !@format_tags
+          html << erb_pre_match
+        else
+          format_text(erb_pre_match)
+        end
 
+        # Extract parts regardless of formatting mode - needed for class sorting
         erb_open, ruby_code, erb_close = ERB_TAG.match(erb_code).captures
+
+        # Handle class sorting in Ruby helper methods if enabled, regardless of format_tags
+        if @css_class_sorter && ruby_code.match?(/class[=:]/)
+          ruby_code = ruby_code.gsub(/class\s*[=:]\s*(['"])(.*?)\1/) do |match|
+            quote = $1
+            classes = $2
+            sorted_classes = TailwindSorter.sort(classes)
+            separator = match.match?(/class:/) ? ': ' : '='
+            "class#{separator}#{quote}#{sorted_classes}#{quote}"
+          end
+
+          # If we modified the code, reconstruct the erb_code for non-formatted output
+          if !@format_tags
+            # Preserve original spaces around the code
+            spaces_before = erb_code.match(/<%(?:==|=|-|)\s*/)[0]
+            spaces_after = erb_code.match(/\s*-?%>/)[0]
+            erb_code = "#{spaces_before}#{ruby_code}#{spaces_after}"
+            html << erb_code
+            next
+          end
+        elsif !@format_tags
+          # If not formatting and no class sorting needed, append as is and continue
+          html << erb_code
+          next
+        end
+
+        # Format mode - add space after erb_open unless it's a comment
         erb_open << ' ' unless ruby_code.start_with?('#')
+        ruby_code.strip!
 
         case ruby_code
         when RUBY_STANDALONE_BLOCK
@@ -332,7 +398,11 @@ class ERB::Formatter
       else
         p ERB_REST: erb_scanner.rest if @debug
         rest = erb_scanner.rest.to_s
-        format_text(rest)
+        if @format_tags
+          format_text(rest)
+        else
+          html << rest
+        end
         erb_scanner.terminate
       end
     end
