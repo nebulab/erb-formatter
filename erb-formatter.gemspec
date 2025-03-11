@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "syntax_tree", ">= 6.2.0"
-  spec.add_dependency "tailwind_sorter"
+  spec.add_dependency "tailwind_sorter", ">= 0.1.0"
 
   spec.add_development_dependency "tailwindcss-rails", "~> 2.0"
   spec.add_development_dependency "m", "~> 1.0"
