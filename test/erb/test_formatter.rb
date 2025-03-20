@@ -16,7 +16,7 @@ class ERB::TestFormatter < Minitest::Test
       expected_path = erb_path.chomp('.erb') + '.expected.erb'
 
       # File.write expected_path, ERB::Formatter.format(File.read(erb_path))
-      assert_equal(File.read(expected_path), ERB::Formatter.new(File.read(erb_path)).to_s, "Formatting of #{erb_path} failed")
+      assert_equal(File.read(expected_path, encoding: "UTF-8"), ERB::Formatter.new(File.read(erb_path)).to_s, "Formatting of #{erb_path} failed")
     end
   end
 
