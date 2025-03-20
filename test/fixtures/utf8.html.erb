@@ -1,4 +1,4 @@
-<h3>Hi <%= @merchant.first_name %></h3>
+<h3>Hi <%= @merchant.first_name %> 🙌 ↯</h3>
 <h1>SOS! Deine PEND-Anbindung wurde SUSPENDIERT!</h1>
 <p>Die PEND-Anbindung von <%= @gateway.title %> auf deinem Shop <%= @shop.name %> wurde suspendiert!</p>
 
@@ -16,4 +16,7 @@
 <%= form_with model: model, url: path, method: :patch do |f| %>
   <%= f.select :type, [["не выбрано", nil], %w[Тип1 type1], %w[Тип2 type2], %w[Тип3 type3], %w[Тип4 type4], %w[Тип5 type5]], {}, { class: "select" } %>
   <%= f.submit "Сохранить" %>
+  The dash: more—effortlessly
+  The copyright: ©
+  The quote: Figma and Tailwind ” are used
 <% end %>
