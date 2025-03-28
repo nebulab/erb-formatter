@@ -123,10 +123,8 @@ let g:ale_fixers = {
 
 Specify `erb_format` as a formatter for the `eruby` filetype in the [Conform config](https://github.com/stevearc/conform.nvim?tab=readme-ov-file#setup):
 ```lua
-opts = {
-  formatters_by_ft = {
-    eruby = { "erb_format" },
-  },
+formatters_by_ft = {
+  eruby = { "erb_format" },
 },
 ```
 
