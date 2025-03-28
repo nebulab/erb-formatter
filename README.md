@@ -121,7 +121,7 @@ let g:ale_fixers = {
 
 ### With Neovim [conform.nvim](https://github.com/stevearc/conform.nvim)
 
-Specify `erb_format` as a formatter for the `eruby` filetype in the Conform config:
+Specify `erb_format` as a formatter for the `eruby` filetype in the [Conform config](https://github.com/stevearc/conform.nvim?tab=readme-ov-file#setup):
 ```lua
 opts = {
   formatters_by_ft = {
