@@ -124,9 +124,9 @@ let g:ale_fixers = {
 Specify `erb_format` as a formatter for the `eruby` filetype:
 ```lua
 opts = {
-	formatters_by_ft = {
-		eruby = { "erb_format" },
-	},
+  formatters_by_ft = {
+    eruby = { "erb_format" },
+  },
 },
 ```
 
