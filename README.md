@@ -124,7 +124,7 @@ let g:ale_fixers = {
 With the gem installed, configure `settings.json` to use the formatter as an external command
 
 ```json
-"language_overrides": {
+"languages": {
   "ERB": {
     "formatter": {
       "external": {
