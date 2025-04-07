@@ -178,6 +178,65 @@ class ERB::TestFormatter < Minitest::Test
     )
   end
 
+  def test_format_ruby_with_block
+    input = <<~ERB.chomp
+      <%=
+        render FooComponent.new(title: t('.page_title')) do |c|
+          c.with_body.with_content(t('.intro_html'))
+        end
+      %>
+    ERB
+  
+    expected_output = <<~ERB.chomp
+      <%= render FooComponent.new(title: t(".page_title")) do |c|
+        c.with_body.with_content(t(".intro_html"))
+      end %>
+    ERB
+  
+    assert_equal(expected_output, ERB::Formatter.format(input).strip)
+  end
+
+  def test_format_ruby_with_block_with_parantheses
+    input = <<~ERB.chomp
+      <%=
+        render(FooComponent.new(title: t('.page_title')) do |c|
+          c.with_body.with_content(t('.intro_html'))
+        end)
+      %>
+    ERB
+  
+    expected_output = <<~ERB.chomp
+      <%= render(
+        FooComponent.new(title: t(".page_title")) do |c|
+          c.with_body.with_content(t(".intro_html"))
+        end,
+      ) %>
+    ERB
+  
+    assert_equal(expected_output, ERB::Formatter.format(input).strip)
+  end
+
+  def test_format_ruby_with_block_with_variable
+    input = <<~ERB.chomp
+      <%=
+        component = FooComponent.new(title: t('.page_title')) do |c|
+          c.with_body.with_content(t('.intro_html'))
+        end
+        render component
+      %>
+    ERB
+  
+    expected_output = <<~ERB.chomp
+      <%= component =
+        FooComponent.new(title: t(".page_title")) do |c|
+          c.with_body.with_content(t(".intro_html"))
+        end
+      render component %>
+    ERB
+  
+    assert_equal(expected_output, ERB::Formatter.format(input).strip)
+  end
+
   def test_tailwindcss_class_sorting
     require 'tailwindcss-rails'
     require 'erb/formatter/command_line'
