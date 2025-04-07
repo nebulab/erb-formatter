@@ -144,12 +144,12 @@ class ERB::Formatter
       name, value = attr.split('=', 2)
 
       if value.nil?
-        attr_html << indented("#{name}")
+        attr_html << (within_line_width ? " #{name}" : indented("#{name}"))
         next
       end
 
       if /\A#{UNQUOTED_VALUE}\z/o.match?(value)
-        attr_html << indented("#{name}=\"#{value}\"")
+        attr_html << (within_line_width ? " #{name}=\"#{value}\"" : indented("#{name}=\"#{value}\""))
         next
       end
 
