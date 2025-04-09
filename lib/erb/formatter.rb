@@ -16,12 +16,12 @@ class ERB::Formatter
   SPACES = /\s+/m
 
   # https://stackoverflow.com/a/317081
-  ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]} # not ending with a slash
-  UNQUOTED_VALUE = %r{[^<>'"\s]+}
-  UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}
-  SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}m
-  DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*?")}m
-  BAD_ATTR = %r{#{ATTR_NAME}=\s+}
+  ATTR_NAME = %r{[^\r\n\t\f\v= '"<>]*[^\r\n\t\f\v= '"<>/]}u # not ending with a slash
+  UNQUOTED_VALUE = %r{[^<>'"\s]+}u
+  UNQUOTED_ATTR = %r{#{ATTR_NAME}=#{UNQUOTED_VALUE}}u
+  SINGLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}='[^']*?')}mu
+  DOUBLE_QUOTE_ATTR = %r{(?:#{ATTR_NAME}="[^"]*?")}mu
+  BAD_ATTR = %r{#{ATTR_NAME}=\s+}u
   QUOTED_ATTR = Regexp.union(SINGLE_QUOTE_ATTR, DOUBLE_QUOTE_ATTR)
   ATTR = Regexp.union(SINGLE_QUOTE_ATTR, DOUBLE_QUOTE_ATTR, UNQUOTED_ATTR, UNQUOTED_VALUE)
   MULTILINE_ATTR_NAMES = %w[data-action]
@@ -29,7 +29,7 @@ class ERB::Formatter
   ERB_TAG = %r{(<%(?:==|=|-|))\s*(.*?)\s*(-?%>)}m
   ERB_PLACEHOLDER = %r{erb[a-z0-9]+tag}
 
-  TAG_NAME = /[a-z0-9_:-]+/
+  TAG_NAME = /[a-z0-9_:-]+/u
   TAG_NAME_ONLY = /\A#{TAG_NAME}\z/
   HTML_ATTR = %r{\s+#{SINGLE_QUOTE_ATTR}|\s+#{DOUBLE_QUOTE_ATTR}|\s+#{UNQUOTED_ATTR}|\s+#{ATTR_NAME}}m
   HTML_TAG_OPEN = %r{<(#{TAG_NAME})((?:#{HTML_ATTR})*)(\s*?)(/>|>)}m
@@ -66,11 +66,14 @@ class ERB::Formatter
   end
 
   def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, debug: $DEBUG)
-    @original_source = source
+    @original_source = source.to_s
+    @original_source = +@original_source if @original_source.frozen?
+    @original_source.force_encoding('UTF-8')
+
     @filename = filename || '(erb)'
     @line_width = line_width
-    @source = remove_front_matter source.dup
-    @html = +""
+    @source = remove_front_matter @original_source.dup
+    @html = +"".force_encoding('UTF-8')
     @debug = debug
     @single_class_per_line = single_class_per_line
     @css_class_sorter = css_class_sorter

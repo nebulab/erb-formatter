@@ -25,3 +25,5 @@ jobs:
         run: bin/setup
       - name: Run test
         run: "bundle exec rake"
+      - name: Run test
+        run: "env LANG=C LC_ALL=C bundle exec rake"

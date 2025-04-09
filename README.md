@@ -119,12 +119,21 @@ let g:ale_fixers = {
 \}
 ```
 
+### With Neovim [conform.nvim](https://github.com/stevearc/conform.nvim)
+
+Specify `erb_format` as a formatter for the `eruby` filetype in the [Conform config](https://github.com/stevearc/conform.nvim?tab=readme-ov-file#setup):
+```lua
+formatters_by_ft = {
+  eruby = { "erb_format" },
+},
+```
+
 ### With [Zed](https://zed.dev/) editor
 
 With the gem installed, configure `settings.json` to use the formatter as an external command
 
 ```json
-"language_overrides": {
+"languages": {
   "ERB": {
     "formatter": {
       "external": {
