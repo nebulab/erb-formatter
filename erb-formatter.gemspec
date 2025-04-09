@@ -28,8 +28,6 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "syntax_tree", '~> 6.0'
-
   spec.add_development_dependency "tailwindcss-rails", "~> 2.0"
   spec.add_development_dependency "m", "~> 1.0"
 end

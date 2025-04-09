@@ -8,20 +8,7 @@ require 'stringio'
 require 'securerandom'
 require 'erb/formatter/version'
 
-require 'syntax_tree'
-require 'syntax_tree/plugin/trailing_comma'
-
 class ERB::Formatter
-  module SyntaxTreeCommandPatch
-    def format(q)
-      q.group do
-        q.format(message)
-        q.text(" ")
-        q.format(arguments) # WAS: q.nest(message.value.length + 1) { q.format(arguments) }
-      end
-    end
-  end
-
   autoload :IgnoreList, 'erb/formatter/ignore_list'
 
   class Error < StandardError; end
@@ -265,21 +252,6 @@ class ERB::Formatter
       code += "\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
       code += "\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
     end
-    p RUBY_IN_: code if @debug
-
-    SyntaxTree::Command.prepend SyntaxTreeCommandPatch
-
-    code = begin
-      SyntaxTree.format(code, @line_width)
-    rescue SyntaxTree::Parser::ParseError => error
-      p RUBY_PARSE_ERROR: error if @debug
-      code
-    end
-
-    lines = code.strip.lines
-    lines = lines[0...-1] if autoclose
-    code = lines.map { |l| indented(l.chomp("\n"), strip: false) }.join.strip
-    p RUBY_OUT: code if @debug
     code
   end
 
