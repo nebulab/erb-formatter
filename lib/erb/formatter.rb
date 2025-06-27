@@ -61,7 +61,7 @@ class ERB::Formatter
     end.freeze
   end
 
-  RUBY_STANDALONE_BLOCK = /\A(yield|next)\b/
+  RUBY_STANDALONE_BLOCK = /\A(yield|next|break)\b/
   RUBY_CLOSE_BLOCK = /\Aend\z/
   RUBY_REOPEN_BLOCK = /\A(else|(elsif|when|in)\b(.*))\z/
 
