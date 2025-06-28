@@ -78,7 +78,7 @@ class ERB::Formatter
     new(source, filename: filename).html
   end
 
-  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, debug: $DEBUG)
+  def initialize(source, line_width: 80, single_class_per_line: false, filename: nil, css_class_sorter: nil, debug: $DEBUG, split_classes: true)
     @original_source = source.to_s
     @original_source = +@original_source if @original_source.frozen?
     @original_source.force_encoding('UTF-8')
@@ -90,6 +90,7 @@ class ERB::Formatter
     @debug = debug
     @single_class_per_line = single_class_per_line
     @css_class_sorter = css_class_sorter
+    @split_classes = split_classes
 
     html.extend DebugShovel if @debug
 
@@ -124,7 +125,7 @@ class ERB::Formatter
 
   attr_accessor \
     :source, :html, :tag_stack, :pre_pos, :pre_placeholders, :erb_tags, :erb_tags_regexp,
-    :pre_placeholders_regexp, :tags_regexp, :line_width
+    :pre_placeholders_regexp, :tags_regexp, :line_width, :split_classes
 
   alias to_s html
 
@@ -159,7 +160,7 @@ class ERB::Formatter
       full_attr = "#{name}=#{value[0]}#{value_parts.join(" ")}#{value[-1]}"
       full_attr = within_line_width ? " #{full_attr}" : indented(full_attr)
 
-      if full_attr.size > line_width && MULTILINE_ATTR_NAMES.include?(name) && attr.match?(QUOTED_ATTR)
+      if full_attr.size > line_width && multiline_attr_names.include?(name) && attr.match?(QUOTED_ATTR)
         attr_html << indented("#{name}=#{value[0]}")
         tag_stack_push('attr"', value)
 
@@ -391,5 +392,15 @@ class ERB::Formatter
     html.strip!
     html.prepend @front_matter + "\n" if @front_matter
     html << "\n"
+  end
+
+  private
+
+  def multiline_attr_names
+    if split_classes
+      MULTILINE_ATTR_NAMES
+    else
+      MULTILINE_ATTR_NAMES.reject { |name| name == 'class' }
+    end
   end
 end

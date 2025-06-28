@@ -202,4 +202,18 @@ class ERB::TestFormatter < Minitest::Test
       ).to_s,
     )
   end
+
+  def test_format_with_no_split_classes
+    assert_equal(
+      "<div\n" \
+      "  class=\"class1 class2 class3 class4 class5 class6 class7 class8 class9 class10 class11 class12 class13 class14 class15\"\n" \
+      ">\n" \
+      "  asdf\n" \
+      "</div>\n",
+      ERB::Formatter.new(
+        "<div class=\"class1 class2 class3 class4 class5 class6 class7 class8 class9 class10 class11 class12 class13 class14 class15\"> asdf </div>",
+        split_classes: false,
+      ).to_s,
+    )
+  end
 end

@@ -66,6 +66,10 @@ class ERB::Formatter::CommandLine
         @fail_level = value
       end
 
+      parser.on("--[no-]split-classes", "Split classes on multiple lines") do |value|
+        @split_classes = value
+      end
+
       parser.on("-h", "--help", "Prints this help") do
         puts parser
         exit
@@ -109,7 +113,8 @@ class ERB::Formatter::CommandLine
           filename: filename,
           line_width: @width || 80,
           single_class_per_line: @single_class_per_line,
-          css_class_sorter: css_class_sorter
+          css_class_sorter: css_class_sorter,
+          split_classes: @split_classes
         )
 
         files_changed = true if html.to_s != code
