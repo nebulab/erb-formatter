@@ -14,11 +14,13 @@
     <% when 'Foo::PaymentMethod' %>
       <span><%= t(".payment.stripe_invoice") %></span>
     <% else %>
-      <% Rails.logger.error.report(
-        StandardError.new(
-          "No human readable name found for payment method #{payment_method.class}",
-        ),
-      ) %>
+      <%
+        Rails.logger.error.report(
+          StandardError.new(
+            "No human readable name found for payment method #{payment_method.class}",
+          ),
+        )
+      %>
     <% end %>
   <% else %>
     <%= t(".payment.no_payment_method_found") %>
