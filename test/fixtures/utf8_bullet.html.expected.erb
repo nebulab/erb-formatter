@@ -1,0 +1,33 @@
+<div class="patron-details">
+  <!-- Case 1: Text "fine" after dot character -->
+  <div>
+    <%= checkout.status %>
+    - fine
+    <%= next_fine.assessed_date.strftime("%b %d") %>
+    @ branch •
+    <%= checkout.status == :overdue ? "Current" : "Pending" %>
+    fine as of
+    <%= next_fine.assessed_date.strftime("%b %d") %>
+    totaling
+    <%= number_to_currency next_fine.amount_owed %>
+  </div>
+  <!-- Case 2: Text "fine" after wrapped dot character -->
+  <div>
+    <%= checkout.status %>
+    - fine
+    <%= next_fine.assessed_date.strftime("%b %d") %>
+    @ branch
+    <%= "•" %>
+    <%= checkout.status == :overdue ? "Current" : "Pending" %>
+    fine as of
+    <%= next_fine.assessed_date.strftime("%b %d") %>
+    totaling
+    <%= number_to_currency next_fine.amount_owed %>
+  </div>
+  <!-- Case 3: Extra minimal -->
+  <div>
+    Text •
+    <%= checkout.status == :overdue ? "Current" : "Pending" %>
+    fine as of
+  </div>
+</div>
