@@ -300,7 +300,7 @@ class ERB::Formatter
         p PRE_MATCH: [erb_pre_pos, '..', erb_scanner.pre_match] if @debug
         erb_pre_match = erb_scanner.pre_match
         erb_pre_match = erb_pre_match[erb_pre_pos..].to_s
-        erb_pre_pos = erb_scanner.pos
+        erb_pre_pos = erb_scanner.charpos
 
         erb_code = erb_tags[erb_scanner.captures.first]
 
