@@ -1,0 +1,13 @@
+<div class="grid gap-6">
+  <% customer_message = {
+    title: "Here the title of the message",
+    created_at: "2021-01-01",
+    author: "John Doe",
+    body: <<~EMPTY,
+      it is a multiline string
+      it should keep the indentation
+      but it increases the indentation in each run
+      it is not idempotent
+      EMPTY
+  } %>
+</div>
