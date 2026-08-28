@@ -264,6 +264,14 @@ class ERB::Formatter
   end
 
   def format_ruby(code, autoclose: false)
+    # Remove surrounding ERB or HTML indentation before adding it back below.
+    indent = "  " * tag_stack.size
+    unless indent.empty?
+      code = code.lines.map.with_index do |line, index|
+        index.zero? ? line : line.delete_prefix(indent)
+      end.join
+    end
+
     if autoclose
       code += "\nend" unless RUBY_OPEN_BLOCK["#{code}\nend"]
       code += "\n}" unless RUBY_OPEN_BLOCK["#{code}\n}"]
